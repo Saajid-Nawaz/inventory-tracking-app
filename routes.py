@@ -306,72 +306,20 @@ def storesperson():
         excel_manager = ExcelManager()
         current_stock = excel_manager.get_current_stock()
         recent_issuances = IssuanceLog.query.order_by(IssuanceLog.issued_at.desc()).limit(10).all()
+        pending_requests = IssuanceRequest.query.filter_by(
+            requested_by=current_user.username
+        ).order_by(IssuanceRequest.requested_at.desc()).limit(10).all()
         
         return render_template('storesperson.html', 
                              current_stock=current_stock, 
-                             recent_issuances=recent_issuances)
+                             recent_issuances=recent_issuances,
+                             pending_requests=pending_requests)
     except Exception as e:
         logging.error(f"Error reading Excel file: {str(e)}")
         flash('Error reading stock data', 'error')
-        return render_template('storesperson.html', current_stock=[], recent_issuances=[])
+        return render_template('storesperson.html', current_stock=[], recent_issuances=[], pending_requests=[])
 
-@app.route('/issue_materials', methods=['POST'])
-@login_required
-def issue_materials():
-    if current_user.role != 'storesperson':
-        flash('Access denied', 'error')
-        return redirect(url_for('index'))
-    
-    material_name = request.form.get('material_name')
-    quantity_issued = request.form.get('quantity_issued')
-    unit = request.form.get('unit')
-    notes = request.form.get('notes', '')
-    
-    if not all([material_name, quantity_issued, unit]):
-        flash('All fields are required', 'error')
-        return redirect(url_for('storesperson'))
-    
-    try:
-        quantity_issued = float(quantity_issued)
-    except ValueError:
-        flash('Invalid quantity', 'error')
-        return redirect(url_for('storesperson'))
-    
-    # Check if sufficient stock is available
-    try:
-        excel_manager = ExcelManager()
-        current_stock = excel_manager.get_current_stock()
-        
-        stock_item = next((item for item in current_stock if item['material_name'] == material_name), None)
-        if not stock_item:
-            flash('Material not found in stock', 'error')
-            return redirect(url_for('storesperson'))
-        
-        if stock_item['quantity'] < quantity_issued:
-            flash(f'Insufficient stock. Available: {stock_item["quantity"]} {unit}', 'error')
-            return redirect(url_for('storesperson'))
-        
-        # Record issuance
-        issuance = IssuanceLog(
-            material_name=material_name,
-            quantity_issued=quantity_issued,
-            unit=unit,
-            issued_by=current_user.username,
-            notes=notes
-        )
-        db.session.add(issuance)
-        db.session.commit()
-        
-        # Update Excel file
-        excel_manager.record_issuance(material_name, quantity_issued, unit, current_user.username, notes)
-        
-        flash(f'Successfully issued {quantity_issued} {unit} of {material_name}', 'success')
-        
-    except Exception as e:
-        logging.error(f"Error processing issuance: {str(e)}")
-        flash('Error processing issuance', 'error')
-    
-    return redirect(url_for('storesperson'))
+
 
 @app.route('/get_stock_data')
 @login_required
