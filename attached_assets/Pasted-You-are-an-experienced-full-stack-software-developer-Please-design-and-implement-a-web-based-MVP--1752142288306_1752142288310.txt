@@ -1,0 +1,41 @@
+You are an experienced full-stack software developer. Please design and implement a **web-based MVP app for construction site material tracking** with the following functionality:
+
+## Goal:
+Build a simple web application that allows:
+1. A **site engineer or supervisor** to take/upload a **photo of materials on site** (e.g., stacks of bricks, steel bars, bags of cement) from their phone.
+2. The app **extracts text or material names & quantities from the image using OCR (Optical Character Recognition)** and logs the data into a central **Excel-compatible (.xlsx) file or Google Sheet** as a record of materials available on site.
+3. A **storesperson** can log in to see the list of materials, select materials issued each day, enter quantities issued, and the Excel file updates to reflect current stock levels and usage log.
+
+## Assumptions:
+- Target device: mobile-friendly web app (works in browser on phones & desktop).
+- User roles: site engineer & storesperson.
+- Authentication: simple username/password login for each role (no need for complex OAuth yet).
+- Storage: The material records should be saved to a file (e.g., .xlsx using openpyxl or similar) or synced to a Google Sheet for easy export.
+- OCR: use a common library like Tesseract (via pytesseract) or Google Vision API.
+
+## Features:
+✅ Login page with roles (site engineer, storesperson)  
+✅ Site engineer page: upload photo → process → preview extracted materials & quantities → confirm → log to Excel  
+✅ Storesperson page: view stock list → input daily issued quantities → log issuance & update remaining stock  
+✅ Simple, clean UI for mobile use (use Bootstrap or TailwindCSS)  
+✅ Excel sheet maintains two sheets/tabs:
+  - Current stock
+  - Issuance log (date, material, qty issued, by whom)
+
+## Tech stack:
+- Backend: Python (Flask or FastAPI)
+- Frontend: HTML/CSS/JS (Bootstrap/TailwindCSS)
+- OCR: pytesseract (with instructions to install Tesseract binary)
+- Excel: openpyxl or pandas
+- Storage: local .xlsx file (MVP) — optionally mention how to switch to Google Sheets in production
+
+## Extras:
+- Include comments in code.
+- Include a `README.md` with setup instructions.
+- Make it easy to deploy locally on Replit.
+
+## Deliverable:
+✅ Full code for the app in a single Replit project folder, with README, that can run and demonstrate the workflow end-to-end.  
+
+Optional (nice-to-have): suggest how to later scale to cloud storage or add photo annotation/correction if OCR fails.
+
