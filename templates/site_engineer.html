@@ -30,14 +30,91 @@
                         <label for="photo" class="form-label">Select Photo</label>
                         <input type="file" class="form-control" id="photo" name="photo" accept="image/*" required>
                         <div class="form-text">
-                            Take a clear photo of materials with visible labels and quantities.
+                            Take a clear photo of materials for documentation/evidence.
                         </div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-camera me-2"></i>
-                        Process Photo
-                    </button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-camera me-2"></i>
+                            Upload Photo & Auto-Extract
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="manualEntryBtn">
+                            <i class="fas fa-keyboard me-2"></i>
+                            Manual Entry with Photo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Manual Entry Form (Hidden by default) -->
+        <div class="card mt-4" id="manualEntryCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-keyboard me-2"></i>
+                    Manual Material Entry
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('manual_entry') }}" enctype="multipart/form-data" id="manualEntryForm">
+                    <div class="mb-3">
+                        <label for="manual_photo" class="form-label">Photo (Optional)</label>
+                        <input type="file" class="form-control" id="manual_photo" name="photo" accept="image/*">
+                        <div class="form-text">
+                            Photo will be saved as documentation/evidence.
+                        </div>
+                    </div>
+                    
+                    <div id="materialsContainer">
+                        <div class="material-entry border rounded p-3 mb-3">
+                            <h6 class="mb-3">Material #1</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Material Name</label>
+                                    <input type="text" class="form-control" name="material_name_0" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" name="quantity_0" step="0.01" min="0" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Unit</label>
+                                    <select class="form-select" name="unit_0" required>
+                                        <option value="">Select Unit</option>
+                                        <option value="pcs">Pieces</option>
+                                        <option value="bags">Bags</option>
+                                        <option value="kg">Kilograms</option>
+                                        <option value="tons">Tons</option>
+                                        <option value="m">Meters</option>
+                                        <option value="m²">Square Meters</option>
+                                        <option value="m³">Cubic Meters</option>
+                                        <option value="liters">Liters</option>
+                                        <option value="boxes">Boxes</option>
+                                        <option value="rolls">Rolls</option>
+                                        <option value="sheets">Sheets</option>
+                                        <option value="units">Units</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-primary" id="addMaterialBtn">
+                            <i class="fas fa-plus me-2"></i>
+                            Add Another Material
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-secondary me-2" id="cancelManualBtn">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>
+                                Save Materials
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -51,12 +128,21 @@
                 </h6>
             </div>
             <div class="card-body">
-                <ul class="list-unstyled">
+                <h6 class="mb-3">Auto-Extract Mode:</h6>
+                <ul class="list-unstyled mb-3">
                     <li><i class="fas fa-check text-success me-2"></i>Ensure good lighting</li>
                     <li><i class="fas fa-check text-success me-2"></i>Include material labels/tags</li>
                     <li><i class="fas fa-check text-success me-2"></i>Keep text readable</li>
                     <li><i class="fas fa-check text-success me-2"></i>Avoid blurry images</li>
                     <li><i class="fas fa-check text-success me-2"></i>Include quantity information</li>
+                </ul>
+                
+                <h6 class="mb-3">Manual Entry Mode:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-keyboard text-info me-2"></i>Type materials manually</li>
+                    <li><i class="fas fa-photo-video text-info me-2"></i>Photo saved as documentation</li>
+                    <li><i class="fas fa-plus text-info me-2"></i>Add multiple materials at once</li>
+                    <li><i class="fas fa-check text-info me-2"></i>More accurate than auto-extract</li>
                 </ul>
             </div>
         </div>
@@ -119,6 +205,85 @@ document.getElementById('photo').addEventListener('change', function(e) {
         setTimeout(() => {
             e.target.form.submit();
         }, 500);
+    }
+});
+
+// Manual entry form functionality
+let materialCount = 1;
+
+document.getElementById('manualEntryBtn').addEventListener('click', function() {
+    document.getElementById('manualEntryCard').style.display = 'block';
+    this.style.display = 'none';
+});
+
+document.getElementById('cancelManualBtn').addEventListener('click', function() {
+    document.getElementById('manualEntryCard').style.display = 'none';
+    document.getElementById('manualEntryBtn').style.display = 'block';
+    // Reset form
+    document.getElementById('manualEntryForm').reset();
+    // Remove extra materials
+    const container = document.getElementById('materialsContainer');
+    const entries = container.querySelectorAll('.material-entry');
+    for (let i = 1; i < entries.length; i++) {
+        entries[i].remove();
+    }
+    materialCount = 1;
+});
+
+document.getElementById('addMaterialBtn').addEventListener('click', function() {
+    const container = document.getElementById('materialsContainer');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'material-entry border rounded p-3 mb-3';
+    newEntry.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Material #${materialCount + 1}</h6>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-material">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Material Name</label>
+                <input type="text" class="form-control" name="material_name_${materialCount}" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Quantity</label>
+                <input type="number" class="form-control" name="quantity_${materialCount}" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Unit</label>
+                <select class="form-select" name="unit_${materialCount}" required>
+                    <option value="">Select Unit</option>
+                    <option value="pcs">Pieces</option>
+                    <option value="bags">Bags</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="tons">Tons</option>
+                    <option value="m">Meters</option>
+                    <option value="m²">Square Meters</option>
+                    <option value="m³">Cubic Meters</option>
+                    <option value="liters">Liters</option>
+                    <option value="boxes">Boxes</option>
+                    <option value="rolls">Rolls</option>
+                    <option value="sheets">Sheets</option>
+                    <option value="units">Units</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newEntry);
+    materialCount++;
+    
+    // Add remove functionality
+    newEntry.querySelector('.remove-material').addEventListener('click', function() {
+        newEntry.remove();
+    });
+});
+
+// Add remove functionality to existing entries
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-material')) {
+        e.target.closest('.material-entry').remove();
     }
 });
 </script>

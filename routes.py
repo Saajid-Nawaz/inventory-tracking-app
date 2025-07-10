@@ -136,6 +136,81 @@ def upload_photo():
     flash('Invalid file type. Please upload an image file.', 'error')
     return redirect(url_for('site_engineer'))
 
+@app.route('/manual_entry', methods=['POST'])
+@login_required
+def manual_entry():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Handle optional photo upload
+    image_filename = None
+    if 'photo' in request.files:
+        file = request.files['photo']
+        if file and file.filename != '' and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Add timestamp to filename to avoid conflicts
+            import time
+            filename = f"{int(time.time())}_{filename}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            image_filename = filename
+    
+    # Extract materials from form data
+    materials = []
+    i = 0
+    while f'material_name_{i}' in request.form:
+        material_name = request.form.get(f'material_name_{i}')
+        quantity = request.form.get(f'quantity_{i}')
+        unit = request.form.get(f'unit_{i}')
+        
+        if material_name and quantity and unit:
+            try:
+                quantity = float(quantity)
+                if quantity > 0:
+                    materials.append({
+                        'name': material_name.strip(),
+                        'quantity': quantity,
+                        'unit': unit
+                    })
+            except ValueError:
+                flash(f'Invalid quantity for {material_name}', 'error')
+                return redirect(url_for('site_engineer'))
+        i += 1
+    
+    if not materials:
+        flash('No valid materials entered', 'warning')
+        return redirect(url_for('site_engineer'))
+    
+    # Save materials to database
+    try:
+        for material in materials:
+            record = MaterialRecord(
+                material_name=material['name'],
+                quantity=material['quantity'],
+                unit=material['unit'],
+                image_filename=image_filename,
+                recorded_by=current_user.username,
+                status='confirmed'
+            )
+            db.session.add(record)
+        
+        db.session.commit()
+        
+        # Update Excel file
+        excel_manager = ExcelManager()
+        excel_manager.update_stock(materials)
+        
+        flash(f'Successfully recorded {len(materials)} materials', 'success')
+        logging.info(f"Manual entry: {current_user.username} recorded {len(materials)} materials")
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error saving manual materials: {str(e)}")
+        flash('Error saving materials. Please try again.', 'error')
+    
+    return redirect(url_for('site_engineer'))
+
 @app.route('/preview_materials')
 @login_required
 def preview_materials():
