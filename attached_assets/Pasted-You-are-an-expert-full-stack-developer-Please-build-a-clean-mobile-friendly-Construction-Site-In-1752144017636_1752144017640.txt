@@ -1,0 +1,118 @@
+You are an expert full-stack developer. Please build a clean, mobile-friendly **Construction Site Inventory & Issuance Web App** as an MVP that supports these workflows:
+
+---
+
+## 🎯 App Objective
+An inventory management app for a construction site, designed to:
+✅ Record materials received & available on site (with photos as documentation)  
+✅ Issue materials daily to teams with logs and controls  
+✅ Track current stock balance at all times  
+✅ Allow a stock count (manual adjustment)  
+✅ Keep a clear audit trail of all activities (who, what, when)
+
+---
+
+## 👥 User Roles
+- **Site Engineer**
+  - Records delivered materials & stock counts
+  - Attaches photo documentation
+- **Storesperson**
+  - Views stock on hand
+  - Issues materials daily
+  - Logs issued quantities
+  - Cannot issue more than available
+- Optional: add admin login to view all logs
+
+---
+
+## 🔗 Data Model
+**Material record:**
+- Material name (dropdown or custom)
+- Quantity
+- Unit (bags, pcs, m³, etc.)
+- Date/time
+- Notes
+- Photos (uploaded & stored, file links saved)
+- Created by (user)
+
+**Stock Table:**
+- Material name
+- Total quantity available
+- Unit
+
+**Issued Log:**
+- Material name
+- Quantity issued
+- Date/time
+- Issued by (user)
+- Remaining stock after issuance
+
+**Stock Count Table:**
+- Material name
+- Adjusted count
+- Notes
+- Date/time
+- Done by
+
+---
+
+## 📲 User Interface
+✅ Login page (roles: engineer, storesperson, admin)  
+✅ Site engineer dashboard:  
+  - Record material delivery
+  - Upload 1–3 photos as documentation
+  - View stock on hand
+✅ Storesperson dashboard:
+  - View stock on hand
+  - Issue materials
+  - View issuance logs
+✅ Stock count page:
+  - Adjust stock to physical count & log adjustment
+✅ Admin dashboard:
+  - View all stock, logs, adjustments, and download as Excel/PDF
+
+---
+
+## 🔧 Features
+✅ Stock cannot go below zero when issuing  
+✅ Logs include date/time, user, and material details  
+✅ Stock count overrides balance & logs the adjustment  
+✅ All records stored in a database (e.g., SQLite for MVP, Postgres for production)  
+✅ Image uploads saved in `/uploads/` and referenced in DB  
+✅ Export stock & issuance log as Excel (optional)
+
+---
+
+## 🌐 Tech Stack
+- Backend: Python with Flask or FastAPI
+- Frontend: HTML/CSS/JS with Bootstrap or TailwindCSS
+- Database: SQLite (with SQLAlchemy or Peewee ORM)
+- Image upload: save on server (with size limit, e.g., 2MB)
+- Authentication: Flask-Login or simple JWT-based roles
+
+---
+
+## 🚀 Deliverables
+✅ A working Replit project with:
+- All backend & frontend code
+- README.md with setup instructions
+- Database schema (and `schema.sql` if needed)
+- Example `.env` file for secrets
+✅ User-friendly, mobile-ready UI
+✅ Clearly commented, clean code
+
+---
+
+## 📈 Nice-to-haves (optional):
+- Pagination for logs
+- Filters by date/material in logs
+- Export to Excel/PDF
+- Responsive UI
+
+---
+
+## 📝 Notes
+✅ Please focus on usability — mobile-friendly forms and tables.  
+✅ Include validations (e.g., no negative quantities, required fields).  
+✅ Keep code modular and easy to extend.
+
