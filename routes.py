@@ -21,7 +21,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # Initialize default users if they don't exist
-@app.before_first_request
 def create_default_users():
     if not User.query.filter_by(username='engineer').first():
         engineer = User(username='engineer', role='site_engineer')
@@ -34,6 +33,10 @@ def create_default_users():
         db.session.add(storesperson)
         
     db.session.commit()
+
+# Create default users when the app starts
+with app.app_context():
+    create_default_users()
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
