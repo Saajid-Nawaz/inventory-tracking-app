@@ -311,6 +311,12 @@ def get_stock_data():
         logging.error(f"Error getting stock data: {str(e)}")
         return jsonify({'error': 'Error reading stock data'}), 500
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    from flask import send_from_directory
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):

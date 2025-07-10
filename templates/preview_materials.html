@@ -30,7 +30,7 @@
             </div>
             <div class="card-body text-center">
                 {% if image_filename %}
-                    <img src="{{ url_for('static', filename='../uploads/' + image_filename) }}" 
+                    <img src="/uploads/{{ image_filename }}" 
                          alt="Uploaded material photo" 
                          class="img-fluid rounded shadow-sm"
                          style="max-height: 300px;">

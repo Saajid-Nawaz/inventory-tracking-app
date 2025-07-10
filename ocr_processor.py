@@ -33,6 +33,12 @@ def extract_materials_from_image(image_path):
             text = pytesseract.image_to_string(processed_image, config=custom_config)
             logging.info(f"OCR extracted text (PSM 4): {text}")
         
+        # Log each line for debugging
+        lines = text.split('\n')
+        for i, line in enumerate(lines):
+            if line.strip():
+                logging.debug(f"OCR Line {i}: '{line.strip()}'")
+        
         # Parse the extracted text to find materials and quantities
         materials = parse_materials_from_text(text)
         
@@ -109,25 +115,34 @@ def parse_invoice_format(lines):
     """
     materials = []
     
+    logging.info(f"Parsing invoice format with {len(lines)} lines")
+    
     # Look for lines that contain both description and quantity
     for i, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
             
-        # Skip header lines
-        if any(header in line.lower() for header in ['description', 'qty', 'rate', 'amount', 'total']):
+        logging.debug(f"Processing line {i}: '{line}'")
+            
+        # Skip header lines and non-material lines
+        if any(header in line.lower() for header in ['description', 'qty', 'rate', 'amount', 'total', 'tax', 'invoice', 'tpin', 'email', 'user', 'time']):
+            logging.debug(f"Skipping header line: '{line}'")
+            continue
+            
+        # Skip lines that are too short or don't contain material info
+        if len(line) < 5:
             continue
             
         # Look for lines with material descriptions and quantities
-        # Pattern: Description text followed by quantity (various formats)
-        
-        # Try to find quantity patterns in the line
+        # More flexible quantity patterns for invoice format
         qty_patterns = [
             r'(\d+(?:\.\d+)?)\s*(?:T|t|units?|pcs?|pieces?|bags?|kg|kgs?|m|meters?|metres?|ft|feet|l|liters?|litres?)',
-            r'(\d+(?:\.\d+)?)\s+(?=\d+\.\d+|\d+$)',  # Quantity followed by price
-            r'(\d+(?:\.\d+)?)\s*$',  # Quantity at end of line
+            r'(\d+(?:\.\d+)?)\s+(?=\d+\.\d+)',  # Quantity followed by price (decimal)
+            r'(\d+(?:\.\d+)?)\s+\d+\s*$',  # Quantity followed by whole number at end
             r'(\d+(?:\.\d+)?)\s+[A-Z]',  # Quantity followed by uppercase letter
+            r'(\d+(?:\.\d+)?)\s*$',  # Quantity at end of line
+            r'\s(\d+(?:\.\d+)?)\s+.*?\d+',  # Quantity in middle followed by price
         ]
         
         # Extract potential material names and quantities
@@ -136,10 +151,10 @@ def parse_invoice_format(lines):
             if matches:
                 try:
                     quantity = float(matches[0])
-                    if quantity > 0:
+                    if quantity > 0 and quantity < 10000:  # Reasonable quantity range
                         # Extract material name (everything before the quantity)
                         material_name = extract_material_name(line, matches[0])
-                        if material_name:
+                        if material_name and len(material_name) > 2:
                             # Try to determine unit
                             unit = determine_unit(line, material_name)
                             materials.append({
@@ -147,9 +162,12 @@ def parse_invoice_format(lines):
                                 'quantity': quantity,
                                 'unit': unit
                             })
+                            logging.info(f"Found material: {material_name} - {quantity} {unit}")
+                            break  # Only take first match per line
                 except ValueError:
                     continue
     
+    logging.info(f"Invoice format parsing found {len(materials)} materials")
     return materials
 
 def parse_standard_format(lines):
@@ -209,22 +227,34 @@ def extract_material_name(line, quantity_str):
     """
     Extract material name from invoice line by removing quantity and other non-material text
     """
-    # Remove the quantity from the line
-    line_parts = line.split()
+    # Remove the quantity from the line first
+    line_without_qty = line.replace(quantity_str, '', 1).strip()
+    
+    # Split into parts
+    line_parts = line_without_qty.split()
     material_parts = []
     
     for part in line_parts:
+        part_lower = part.lower()
         # Skip numbers, prices, and common non-material words
         if (not re.match(r'^\d+(?:\.\d+)?$', part) and 
             not re.match(r'^\d+\.\d+$', part) and
-            not part.lower() in ['qty', 'rate', 'amount', 'total', 'tax', 'vat', 'k', 'tpin', 'user', 'time', 'hrs']):
+            not re.match(r'^\d+$', part) and
+            not part_lower in ['qty', 'rate', 'amount', 'total', 'tax', 'vat', 'k', 'tpin', 'user', 'time', 'hrs', 'description', 'the', 'a', 'an', 'of', 'for', 'with', 'by'] and
+            len(part) > 1):  # Skip single characters
             material_parts.append(part)
     
     if material_parts:
-        material_name = ' '.join(material_parts[:4])  # Take first 4 words max
+        # Take up to 6 words for material name
+        material_name = ' '.join(material_parts[:6])
         # Clean up the material name
-        material_name = re.sub(r'[^\w\s]', ' ', material_name)
+        material_name = re.sub(r'[^\w\s-]', ' ', material_name)  # Keep hyphens
         material_name = ' '.join(material_name.split())  # Remove extra spaces
+        
+        # Remove common prefixes/suffixes that aren't part of material name
+        material_name = re.sub(r'^(item|part|product|material)\s+', '', material_name, flags=re.IGNORECASE)
+        material_name = re.sub(r'\s+(item|part|product|material)$', '', material_name, flags=re.IGNORECASE)
+        
         return material_name.title()
     
     return None
