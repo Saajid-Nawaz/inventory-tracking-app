@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Materials - Construction Site Material Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-eye me-2"></i>
+                Preview Extracted Materials
+            </h2>
+            <a href="{{ url_for('site_engineer') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Image Preview -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-image me-2"></i>
+                    Uploaded Image
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                {% if image_filename %}
+                    <img src="{{ url_for('static', filename='../uploads/' + image_filename) }}" 
+                         alt="Uploaded material photo" 
+                         class="img-fluid rounded shadow-sm"
+                         style="max-height: 300px;">
+                {% else %}
+                    <div class="text-muted">
+                        <i class="fas fa-image fa-3x mb-2"></i>
+                        <p>No image available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Materials Form -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Review and Confirm Materials
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if materials %}
+                    <form method="POST" action="{{ url_for('confirm_materials') }}">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Please review the extracted materials below. You can edit the details before confirming.
+                        </div>
+                        
+                        {% for material in materials %}
+                        <div class="row mb-3 p-3 border rounded">
+                            <div class="col-md-4">
+                                <label for="material_{{ loop.index0 }}" class="form-label">Material Name</label>
+                                <input type="text" class="form-control" 
+                                       id="material_{{ loop.index0 }}" 
+                                       name="material_{{ loop.index0 }}" 
+                                       value="{{ material.name }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="quantity_{{ loop.index0 }}" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" 
+                                       id="quantity_{{ loop.index0 }}" 
+                                       name="quantity_{{ loop.index0 }}" 
+                                       value="{{ material.quantity }}" 
+                                       step="0.01" min="0.01" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="unit_{{ loop.index0 }}" class="form-label">Unit</label>
+                                <select class="form-select" id="unit_{{ loop.index0 }}" name="unit_{{ loop.index0 }}" required>
+                                    <option value="bags" {{ 'selected' if material.unit == 'bags' else '' }}>Bags</option>
+                                    <option value="tons" {{ 'selected' if material.unit == 'tons' else '' }}>Tons</option>
+                                    <option value="kg" {{ 'selected' if material.unit == 'kg' else '' }}>Kg</option>
+                                    <option value="pieces" {{ 'selected' if material.unit == 'pieces' else '' }}>Pieces</option>
+                                    <option value="meters" {{ 'selected' if material.unit == 'meters' else '' }}>Meters</option>
+                                    <option value="liters" {{ 'selected' if material.unit == 'liters' else '' }}>Liters</option>
+                                    <option value="cubic" {{ 'selected' if material.unit == 'cubic' else '' }}>Cubic</option>
+                                    <option value="units" {{ 'selected' if material.unit == 'units' else '' }}>Units</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        onclick="removeRow(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>
+                                Confirm Materials
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="addRow()">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Material
+                            </button>
+                            <a href="{{ url_for('site_engineer') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No materials were detected in the image. Please try uploading a clearer image or add materials manually.
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('confirm_materials') }}">
+                        <div id="material-rows"></div>
+                        
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-primary" onclick="addRow()">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Material
+                            </button>
+                            <button type="submit" class="btn btn-success" style="display: none;" id="confirm-btn">
+                                <i class="fas fa-check me-2"></i>
+                                Confirm Materials
+                            </button>
+                            <a href="{{ url_for('site_engineer') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let rowCount = {{ materials|length if materials else 0 }};
+
+function removeRow(button) {
+    button.closest('.row').remove();
+    updateConfirmButton();
+}
+
+function addRow() {
+    const container = document.getElementById('material-rows') || document.querySelector('form .card-body');
+    const rowHtml = `
+        <div class="row mb-3 p-3 border rounded">
+            <div class="col-md-4">
+                <label for="material_${rowCount}" class="form-label">Material Name</label>
+                <input type="text" class="form-control" 
+                       id="material_${rowCount}" 
+                       name="material_${rowCount}" 
+                       placeholder="Enter material name" required>
+            </div>
+            <div class="col-md-3">
+                <label for="quantity_${rowCount}" class="form-label">Quantity</label>
+                <input type="number" class="form-control" 
+                       id="quantity_${rowCount}" 
+                       name="quantity_${rowCount}" 
+                       placeholder="0.00"
+                       step="0.01" min="0.01" required>
+            </div>
+            <div class="col-md-3">
+                <label for="unit_${rowCount}" class="form-label">Unit</label>
+                <select class="form-select" id="unit_${rowCount}" name="unit_${rowCount}" required>
+                    <option value="">Select unit...</option>
+                    <option value="bags">Bags</option>
+                    <option value="tons">Tons</option>
+                    <option value="kg">Kg</option>
+                    <option value="pieces">Pieces</option>
+                    <option value="meters">Meters</option>
+                    <option value="liters">Liters</option>
+                    <option value="cubic">Cubic</option>
+                    <option value="units">Units</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" 
+                        onclick="removeRow(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    if (document.getElementById('material-rows')) {
+        document.getElementById('material-rows').insertAdjacentHTML('beforeend', rowHtml);
+    } else {
+        const form = document.querySelector('form .card-body');
+        form.insertAdjacentHTML('beforeend', rowHtml);
+    }
+    
+    rowCount++;
+    updateConfirmButton();
+}
+
+function updateConfirmButton() {
+    const confirmBtn = document.getElementById('confirm-btn');
+    const rows = document.querySelectorAll('.row.mb-3.p-3.border');
+    
+    if (confirmBtn) {
+        confirmBtn.style.display = rows.length > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// Initialize confirm button visibility
+document.addEventListener('DOMContentLoaded', function() {
+    updateConfirmButton();
+});
+</script>
+{% endblock %}

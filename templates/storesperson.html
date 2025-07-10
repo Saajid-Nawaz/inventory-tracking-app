@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Storesperson Dashboard - Construction Site Material Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-warehouse me-2"></i>
+                Storesperson Dashboard
+            </h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Current Stock -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-boxes me-2"></i>
+                    Current Stock
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if current_stock %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Last Updated</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in current_stock %}
+                                <tr>
+                                    <td>{{ item.material_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if item.quantity > 10 else 'warning' if item.quantity > 0 else 'danger' }}">
+                                            {{ item.quantity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ item.last_updated }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="showIssuanceModal('{{ item.material_name }}', {{ item.quantity }}, '{{ item.unit }}')">
+                                            <i class="fas fa-minus-circle me-1"></i>
+                                            Issue
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>No stock data available.</p>
+                        <p class="small">Materials will appear here after site engineers upload photos.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Issue Form -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-hand-holding me-2"></i>
+                    Issue Materials
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('issue_materials') }}">
+                    <div class="mb-3">
+                        <label for="material_name" class="form-label">Material</label>
+                        <select class="form-select" id="material_name" name="material_name" required>
+                            <option value="">Select material...</option>
+                            {% for item in current_stock %}
+                            <option value="{{ item.material_name }}">{{ item.material_name }} ({{ item.quantity }} {{ item.unit }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantity_issued" class="form-label">Quantity to Issue</label>
+                        <input type="number" class="form-control" id="quantity_issued" name="quantity_issued" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="unit" class="form-label">Unit</label>
+                        <input type="text" class="form-control" id="unit" name="unit" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="Additional notes about this issuance..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-check me-2"></i>
+                        Issue Materials
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Recent Issuances -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Issuances
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if recent_issuances %}
+                    <div class="list-group list-group-flush">
+                        {% for issuance in recent_issuances %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ issuance.material_name }}</strong>
+                                <small class="text-muted">{{ issuance.issued_at.strftime('%m/%d %H:%M') }}</small>
+                            </div>
+                            <small class="text-muted">{{ issuance.quantity_issued }} {{ issuance.unit }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-list fa-2x mb-2"></i>
+                        <p>No recent issuances.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Issuance Modal -->
+<div class="modal fade" id="issuanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Issue Materials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('issue_materials') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="modal_material_name" class="form-label">Material</label>
+                        <input type="text" class="form-control" id="modal_material_name" name="material_name" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_quantity_issued" class="form-label">Quantity to Issue</label>
+                        <input type="number" class="form-control" id="modal_quantity_issued" name="quantity_issued" 
+                               step="0.01" min="0.01" required>
+                        <div class="form-text">Available: <span id="available_quantity"></span></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_unit" class="form-label">Unit</label>
+                        <input type="text" class="form-control" id="modal_unit" name="unit" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="modal_notes" name="notes" rows="2" 
+                                  placeholder="Additional notes about this issuance..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check me-2"></i>
+                        Issue Materials
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showIssuanceModal(materialName, availableQuantity, unit) {
+    document.getElementById('modal_material_name').value = materialName;
+    document.getElementById('modal_unit').value = unit;
+    document.getElementById('available_quantity').textContent = availableQuantity + ' ' + unit;
+    document.getElementById('modal_quantity_issued').max = availableQuantity;
+    
+    const modal = new bootstrap.Modal(document.getElementById('issuanceModal'));
+    modal.show();
+}
+
+// Auto-fill unit when material is selected
+document.getElementById('material_name').addEventListener('change', function(e) {
+    const selectedText = e.target.options[e.target.selectedIndex].text;
+    const match = selectedText.match(/\(.*?\s(.+?)\)/);
+    if (match) {
+        document.getElementById('unit').value = match[1];
+    }
+});
+</script>
+{% endblock %}
