@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Issuance Request - Construction Site Material Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-truck-loading me-2"></i>
+                Batch Issuance Request
+            </h2>
+            <a href="{{ url_for('storesperson') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Batch Request Form -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>
+                    Create New Batch Request
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_batch_request') }}" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="issued_to" class="form-label">Issued To *</label>
+                                <input type="text" class="form-control" id="issued_to" name="issued_to" 
+                                       placeholder="Company/Person receiving materials" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="truck_number" class="form-label">Truck Number</label>
+                                <input type="text" class="form-control" id="truck_number" name="truck_number" 
+                                       placeholder="Vehicle registration number">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="driver_name" class="form-label">Driver Name</label>
+                                <input type="text" class="form-control" id="driver_name" name="driver_name" 
+                                       placeholder="Driver's full name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="driver_contact" class="form-label">Driver Contact</label>
+                                <input type="text" class="form-control" id="driver_contact" name="driver_contact" 
+                                       placeholder="Phone number">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="gtv_image" class="form-label">GTV Image (Optional)</label>
+                        <input type="file" class="form-control" id="gtv_image" name="gtv_image" 
+                               accept="image/*">
+                        <div class="form-text">Upload a photo of the physical GTV if available</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Materials to Issue *</label>
+                        <div id="materials-container">
+                            <div class="material-row mb-2">
+                                <div class="row">
+                                    <div class="col-md-5">
+                                        <select class="form-select" name="material_name_0" required>
+                                            <option value="">Select material...</option>
+                                            {% for item in current_stock %}
+                                            <option value="{{ item.material_name }}" data-unit="{{ item.unit }}" data-available="{{ item.quantity }}">
+                                                {{ item.material_name }} ({{ item.quantity }} {{ item.unit }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" class="form-control" name="quantity_0" 
+                                               placeholder="Quantity" step="0.01" min="0.01" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" name="unit_0" 
+                                               placeholder="Unit" readonly>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-material">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-material">
+                            <i class="fas fa-plus me-1"></i>
+                            Add Material
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Additional notes about this batch issuance..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            Submit Batch Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Batch Requests -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Batch Requests
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if batch_requests %}
+                    <div class="list-group">
+                        {% for batch in batch_requests %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ batch.batch_id }}</h6>
+                                    <p class="mb-1">{{ batch.issued_to }}</p>
+                                    <small class="text-muted">{{ batch.requested_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'warning' if batch.status == 'pending' else 'success' if batch.status == 'approved' else 'danger' }}">
+                                    {{ batch.status.title() }}
+                                </span>
+                            </div>
+                            {% if batch.truck_number %}
+                            <small class="text-muted">
+                                <i class="fas fa-truck me-1"></i>
+                                {{ batch.truck_number }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>No batch requests yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let materialIndex = 1;
+
+document.getElementById('add-material').addEventListener('click', function() {
+    const container = document.getElementById('materials-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'material-row mb-2';
+    newRow.innerHTML = `
+        <div class="row">
+            <div class="col-md-5">
+                <select class="form-select" name="material_name_${materialIndex}" required>
+                    <option value="">Select material...</option>
+                    {% for item in current_stock %}
+                    <option value="{{ item.material_name }}" data-unit="{{ item.unit }}" data-available="{{ item.quantity }}">
+                        {{ item.material_name }} ({{ item.quantity }} {{ item.unit }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control" name="quantity_${materialIndex}" 
+                       placeholder="Quantity" step="0.01" min="0.01" required>
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="unit_${materialIndex}" 
+                       placeholder="Unit" readonly>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-danger btn-sm remove-material">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newRow);
+    materialIndex++;
+    
+    // Add event listener for the new material select
+    const newSelect = newRow.querySelector('select');
+    newSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const unitInput = newRow.querySelector('input[name*="unit_"]');
+        const quantityInput = newRow.querySelector('input[name*="quantity_"]');
+        
+        if (selectedOption.value) {
+            unitInput.value = selectedOption.dataset.unit;
+            quantityInput.max = selectedOption.dataset.available;
+        }
+    });
+});
+
+// Remove material row
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-material') || e.target.parentElement.classList.contains('remove-material')) {
+        const materialRows = document.querySelectorAll('.material-row');
+        if (materialRows.length > 1) {
+            e.target.closest('.material-row').remove();
+        }
+    }
+});
+
+// Auto-fill unit when material is selected
+document.addEventListener('change', function(e) {
+    if (e.target.name && e.target.name.includes('material_name_')) {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const row = e.target.closest('.material-row');
+        const unitInput = row.querySelector('input[name*="unit_"]');
+        const quantityInput = row.querySelector('input[name*="quantity_"]');
+        
+        if (selectedOption.value) {
+            unitInput.value = selectedOption.dataset.unit;
+            quantityInput.max = selectedOption.dataset.available;
+        }
+    }
+});
+</script>
+{% endblock %}

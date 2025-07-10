@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Report - Construction Site Material Tracker{% endblock %}
+
+{% block content %}
+{% if not print_mode %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h2>
+        <i class="fas fa-file-alt me-2"></i>
+        Stock Report
+    </h2>
+    <div>
+        <a href="{{ url_for('stock_report', print='true') }}" class="btn btn-primary" target="_blank">
+            <i class="fas fa-print me-2"></i>
+            Print Report
+        </a>
+        <a href="{{ url_for('materials_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<div class="{% if print_mode %}print-container{% endif %}">
+    <!-- Report Header -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold">Construction Site Stock Report</h1>
+        <p class="text-muted">Generated on {{ report_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        <hr>
+    </div>
+
+    <!-- Current Stock Section -->
+    <div class="mb-5">
+        <h3 class="fw-bold mb-3">
+            <i class="fas fa-boxes me-2"></i>
+            Current Stock Levels
+        </h3>
+        
+        {% if current_stock %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Material Name</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in current_stock %}
+                    <tr class="{% if item.quantity <= 0 %}table-danger{% elif item.quantity <= 10 %}table-warning{% endif %}">
+                        <td>{{ item.material_name }}</td>
+                        <td class="fw-bold">{{ item.quantity }}</td>
+                        <td>{{ item.unit }}</td>
+                        <td>
+                            {% if item.quantity <= 0 %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                            {% elif item.quantity <= 10 %}
+                                <span class="badge bg-warning">Low Stock</span>
+                            {% else %}
+                                <span class="badge bg-success">Available</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.last_updated }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Stock Summary -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">{{ current_stock|selectattr('quantity', '>', 10)|list|length }}</h5>
+                        <p class="card-text">Items in Stock</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning">{{ current_stock|selectattr('quantity', '<=', 10)|selectattr('quantity', '>', 0)|list|length }}</h5>
+                        <p class="card-text">Low Stock Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-danger">{{ current_stock|selectattr('quantity', '<=', 0)|list|length }}</h5>
+                        <p class="card-text">Out of Stock Items</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No stock data available.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Issuances Section -->
+    <div class="mb-5">
+        <h3 class="fw-bold mb-3">
+            <i class="fas fa-history me-2"></i>
+            Recent Material Issuances (Last 20)
+        </h3>
+        
+        {% if recent_issuances %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Date</th>
+                        <th>Material</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Issued By</th>
+                        <th>Authorized By</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issuance in recent_issuances %}
+                    <tr>
+                        <td>{{ issuance.issued_at.strftime('%m/%d/%Y %H:%M') }}</td>
+                        <td>{{ issuance.material_name }}</td>
+                        <td>{{ issuance.quantity_issued }}</td>
+                        <td>{{ issuance.unit }}</td>
+                        <td>{{ issuance.issued_by }}</td>
+                        <td>
+                            {% if issuance.authorized_by %}
+                                <span class="badge bg-success">{{ issuance.authorized_by }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">Direct Issue</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ issuance.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No recent issuances recorded.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Report Footer -->
+    <div class="mt-5 pt-4 border-top">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>Report Generated By:</strong> {{ current_user.username }}</p>
+                <p class="mb-1"><strong>Role:</strong> {{ current_user.role.replace('_', ' ').title() }}</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p class="mb-1"><strong>Total Materials:</strong> {{ current_stock|length }}</p>
+                <p class="mb-1"><strong>Recent Issuances:</strong> {{ recent_issuances|length }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+{% if print_mode %}
+<style>
+@media print {
+    .no-print { display: none !important; }
+    .print-container { margin: 0; }
+    body { background: white !important; }
+    .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+    .table { font-size: 12px; }
+    .badge { border: 1px solid #000; }
+    h1, h2, h3 { color: black !important; }
+    .table-dark { background-color: #343a40 !important; color: white !important; }
+    .table-secondary { background-color: #6c757d !important; color: white !important; }
+}
+</style>
+{% endif %}
+{% endblock %}

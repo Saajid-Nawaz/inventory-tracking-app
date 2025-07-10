@@ -8,9 +8,11 @@ import logging
 from datetime import datetime
 
 from app import app, db
-from models import User, MaterialRecord, IssuanceLog, IssuanceRequest
+from models import User, MaterialRecord, IssuanceLog, IssuanceRequest, BatchIssuance, BatchIssuanceItem
 from ocr_processor import extract_materials_from_image
 from excel_manager import ExcelManager
+import random
+import string
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -402,17 +404,27 @@ def approval_dashboard():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    # Get pending requests
+    # Get pending individual requests
     pending_requests = IssuanceRequest.query.filter_by(status='pending').order_by(IssuanceRequest.requested_at.desc()).all()
+    
+    # Get pending batch requests
+    pending_batch_requests = BatchIssuance.query.filter_by(status='pending').order_by(BatchIssuance.requested_at.desc()).all()
     
     # Get recent decisions
     recent_decisions = IssuanceRequest.query.filter(
         IssuanceRequest.status.in_(['approved', 'denied'])
-    ).order_by(IssuanceRequest.reviewed_at.desc()).limit(20).all()
+    ).order_by(IssuanceRequest.reviewed_at.desc()).limit(10).all()
+    
+    # Get recent batch decisions
+    recent_batch_decisions = BatchIssuance.query.filter(
+        BatchIssuance.status.in_(['approved', 'denied'])
+    ).order_by(BatchIssuance.approved_at.desc()).limit(10).all()
     
     return render_template('approval_dashboard.html',
                          pending_requests=pending_requests,
-                         recent_decisions=recent_decisions)
+                         pending_batch_requests=pending_batch_requests,
+                         recent_decisions=recent_decisions,
+                         recent_batch_decisions=recent_batch_decisions)
 
 @app.route('/process_approval', methods=['POST'])
 @login_required
@@ -479,6 +491,82 @@ def process_approval():
     
     return redirect(url_for('approval_dashboard'))
 
+@app.route('/process_batch_approval', methods=['POST'])
+@login_required
+def process_batch_approval():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    batch_id = request.form.get('batch_id')
+    action = request.form.get('action')
+    review_notes = request.form.get('review_notes')
+    
+    if not batch_id or action not in ['approve', 'deny']:
+        flash('Invalid request', 'error')
+        return redirect(url_for('approval_dashboard'))
+    
+    try:
+        batch_issuance = BatchIssuance.query.filter_by(batch_id=batch_id).first()
+        
+        if not batch_issuance:
+            flash('Batch request not found', 'error')
+            return redirect(url_for('approval_dashboard'))
+        
+        if batch_issuance.status != 'pending':
+            flash('Batch request already processed', 'warning')
+            return redirect(url_for('approval_dashboard'))
+        
+        batch_issuance.status = 'approved' if action == 'approve' else 'denied'
+        batch_issuance.approved_by = current_user.username
+        batch_issuance.approved_at = datetime.utcnow()
+        batch_issuance.notes = review_notes
+        
+        db.session.commit()
+        
+        # If approved, automatically create the issuance logs for all items
+        if action == 'approve':
+            batch_items = BatchIssuanceItem.query.filter_by(batch_id=batch_id).all()
+            excel_manager = ExcelManager()
+            
+            for item in batch_items:
+                # Create issuance log
+                issuance_log = IssuanceLog(
+                    batch_id=batch_id,
+                    material_name=item.material_name,
+                    quantity_issued=item.quantity_requested,
+                    unit=item.unit,
+                    issued_by=batch_issuance.requested_by,
+                    authorized_by=current_user.username,
+                    notes=f"Batch {batch_id} approved: {review_notes}" if review_notes else f"Batch {batch_id} approved"
+                )
+                db.session.add(issuance_log)
+                
+                # Update Excel stock
+                excel_manager.record_issuance(
+                    item.material_name,
+                    item.quantity_requested,
+                    item.unit,
+                    current_user.username,
+                    f"Batch {batch_id} - Authorized by {current_user.username}"
+                )
+            
+            # Update batch status to issued
+            batch_issuance.status = 'issued'
+            batch_issuance.issued_at = datetime.utcnow()
+            
+            db.session.commit()
+        
+        flash(f'Batch request {action}d successfully', 'success')
+        logging.info(f"Batch {action}d: {current_user.username} {action}d batch {batch_id} from {batch_issuance.requested_by}")
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error processing batch approval: {str(e)}")
+        flash('Error processing batch request. Please try again.', 'error')
+    
+    return redirect(url_for('approval_dashboard'))
+
 @app.route('/daily_report')
 @login_required
 def daily_report():
@@ -536,4 +624,141 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+    db.session.rollback()
     return render_template('500.html'), 500
+
+def generate_batch_id():
+    """Generate a unique batch ID"""
+    timestamp = datetime.now().strftime("%Y%m%d")
+    random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    return f"BTH-{timestamp}-{random_suffix}"
+
+@app.route('/batch_issuance')
+@login_required
+def batch_issuance():
+    if current_user.role != 'storesperson':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get current stock for the form
+    try:
+        excel_manager = ExcelManager()
+        current_stock = excel_manager.get_current_stock()
+        
+        # Get recent batch requests
+        batch_requests = BatchIssuance.query.filter_by(
+            requested_by=current_user.username
+        ).order_by(BatchIssuance.requested_at.desc()).limit(10).all()
+        
+        return render_template('batch_issuance.html', 
+                             current_stock=current_stock,
+                             batch_requests=batch_requests)
+    except Exception as e:
+        logging.error(f"Error loading batch issuance: {str(e)}")
+        flash('Error loading data', 'error')
+        return render_template('batch_issuance.html', current_stock=[], batch_requests=[])
+
+@app.route('/create_batch_request', methods=['POST'])
+@login_required
+def create_batch_request():
+    if current_user.role != 'storesperson':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get form data
+    issued_to = request.form.get('issued_to')
+    truck_number = request.form.get('truck_number')
+    driver_name = request.form.get('driver_name')
+    driver_contact = request.form.get('driver_contact')
+    notes = request.form.get('notes', '')
+    
+    # Get materials data
+    materials = []
+    i = 0
+    while request.form.get(f'material_name_{i}'):
+        material_name = request.form.get(f'material_name_{i}')
+        quantity = request.form.get(f'quantity_{i}')
+        unit = request.form.get(f'unit_{i}')
+        
+        if material_name and quantity and unit:
+            try:
+                quantity = float(quantity)
+                if quantity > 0:
+                    materials.append({
+                        'name': material_name,
+                        'quantity': quantity,
+                        'unit': unit
+                    })
+            except ValueError:
+                flash(f'Invalid quantity for {material_name}', 'error')
+                return redirect(url_for('batch_issuance'))
+        i += 1
+    
+    if not issued_to or not materials:
+        flash('Please fill in all required fields and add at least one material', 'error')
+        return redirect(url_for('batch_issuance'))
+    
+    # Handle GTV image upload
+    gtv_image = None
+    if 'gtv_image' in request.files:
+        file = request.files['gtv_image']
+        if file and file.filename != '' and allowed_file(file.filename):
+            gtv_image = secure_filename(file.filename)
+            gtv_image = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{gtv_image}"
+            file.save(os.path.join('uploads', gtv_image))
+    
+    # Generate batch ID
+    batch_id = generate_batch_id()
+    
+    # Create batch issuance
+    batch_issuance = BatchIssuance(
+        batch_id=batch_id,
+        issued_to=issued_to,
+        truck_number=truck_number,
+        driver_name=driver_name,
+        driver_contact=driver_contact,
+        gtv_image=gtv_image,
+        requested_by=current_user.username,
+        notes=notes
+    )
+    
+    db.session.add(batch_issuance)
+    
+    # Add batch items
+    for material in materials:
+        batch_item = BatchIssuanceItem(
+            batch_id=batch_id,
+            material_name=material['name'],
+            quantity_requested=material['quantity'],
+            unit=material['unit']
+        )
+        db.session.add(batch_item)
+    
+    db.session.commit()
+    
+    flash(f'Batch request {batch_id} created successfully and sent for approval', 'success')
+    return redirect(url_for('batch_issuance'))
+
+@app.route('/stock_report')
+@login_required
+def stock_report():
+    """Generate printable stock report"""
+    try:
+        excel_manager = ExcelManager()
+        current_stock = excel_manager.get_current_stock()
+        
+        # Get recent issuances for context
+        recent_issuances = IssuanceLog.query.order_by(IssuanceLog.issued_at.desc()).limit(20).all()
+        
+        # Check if this is a print request
+        print_mode = request.args.get('print') == 'true'
+        
+        return render_template('stock_report.html',
+                             current_stock=current_stock,
+                             recent_issuances=recent_issuances,
+                             print_mode=print_mode,
+                             report_date=datetime.now())
+    except Exception as e:
+        logging.error(f"Error generating stock report: {str(e)}")
+        flash('Error generating stock report', 'error')
+        return redirect(url_for('materials_dashboard'))
