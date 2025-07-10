@@ -35,7 +35,8 @@ The application follows a traditional three-tier architecture:
 2. **Models** (`models.py`):
    - User model for authentication
    - MaterialRecord model for tracking materials
-   - IssuanceLog model for recording material distributions
+   - IssuanceRequest model for authorization workflow
+   - IssuanceLog model for recording material distributions with authorization tracking
 
 3. **Routes** (`routes.py`):
    - Authentication endpoints
@@ -69,8 +70,8 @@ The application follows a traditional three-tier architecture:
 1. **Material Recording Flow**:
    - Site Engineer uploads photo → OCR processing → Material extraction → User review → Confirmation → Excel storage
 
-2. **Issuance Flow**:
-   - Storesperson views current stock → Selects materials → Records issuance → Updates stock levels → Logs transaction
+2. **Authorization & Issuance Flow**:
+   - Storesperson requests material issuance → Site Engineer reviews & approves/denies → Auto-issuance on approval → Stock updates → Transaction logging
 
 3. **Authentication Flow**:
    - User login → Role verification → Dashboard redirection → Session management
@@ -118,5 +119,20 @@ The application follows a traditional three-tier architecture:
 - Session management with Flask-Login
 - File upload validation and sanitization
 - Directory traversal protection with secure_filename
+
+## Recent Changes (July 2025)
+
+### Enhanced Authorization Workflow
+- **Manual Material Entry**: Added option for site engineers to manually input materials with photo documentation
+- **Authorization System**: Implemented request-approval workflow where storekeepers request materials and site engineers approve/deny
+- **Materials Dashboard**: Centralized view of all delivered materials and current stock for both user roles
+- **Daily Usage Reports**: End-of-day reports showing authorized vs unauthorized material issuances
+- **Approval Dashboard**: Site engineer interface for reviewing and processing material requests
+
+### New Features Added
+1. **IssuanceRequest Model**: Tracks material requests with approval status
+2. **Enhanced IssuanceLog**: Links to authorization requests and tracks authorizing engineer
+3. **Multiple Entry Methods**: OCR auto-extract + manual entry with validation
+4. **Audit Trail**: Complete tracking of who requested, who approved, and when materials were issued
 
 The application is designed as an MVP with clear upgrade paths for production deployment, including database migration strategies and cloud service integration options.

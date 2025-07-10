@@ -32,12 +32,30 @@ class MaterialRecord(db.Model):
     def __repr__(self):
         return f'<MaterialRecord {self.material_name}: {self.quantity} {self.unit}>'
 
+class IssuanceRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    material_name = db.Column(db.String(200), nullable=False)
+    quantity_requested = db.Column(db.Float, nullable=False)
+    unit = db.Column(db.String(50), nullable=False)
+    requested_by = db.Column(db.String(80), nullable=False)  # storesperson
+    requested_at = db.Column(db.DateTime, default=datetime.utcnow)
+    purpose = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'approved', 'denied'
+    reviewed_by = db.Column(db.String(80), nullable=True)  # site engineer
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(db.Text, nullable=True)
+    
+    def __repr__(self):
+        return f'<IssuanceRequest {self.material_name}: {self.quantity_requested} {self.unit}>'
+
 class IssuanceLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.Integer, db.ForeignKey('issuance_request.id'), nullable=True)
     material_name = db.Column(db.String(200), nullable=False)
     quantity_issued = db.Column(db.Float, nullable=False)
     unit = db.Column(db.String(50), nullable=False)
     issued_by = db.Column(db.String(80), nullable=False)
+    authorized_by = db.Column(db.String(80), nullable=True)  # site engineer who approved
     issued_at = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text, nullable=True)
     

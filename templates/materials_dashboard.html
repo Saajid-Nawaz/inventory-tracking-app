@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Materials Dashboard - Construction Site Material Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-boxes me-2"></i>
+                Materials Dashboard
+            </h2>
+            <div>
+                <a href="{{ url_for('site_engineer') if current_user.role == 'site_engineer' else url_for('storesperson') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Stock Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-warehouse me-2"></i>
+                    Current Stock on Site
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if current_stock %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Material Name</th>
+                                    <th>Available Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Status</th>
+                                    {% if current_user.role == 'storesperson' %}
+                                    <th>Actions</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for material in current_stock %}
+                                <tr>
+                                    <td>{{ material.material_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if material.quantity > 10 else 'warning' if material.quantity > 0 else 'danger' }}">
+                                            {{ material.quantity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ material.unit }}</td>
+                                    <td>
+                                        {% if material.quantity > 10 %}
+                                            <span class="badge bg-success">Well Stocked</span>
+                                        {% elif material.quantity > 0 %}
+                                            <span class="badge bg-warning">Low Stock</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Out of Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if current_user.role == 'storesperson' %}
+                                    <td>
+                                        {% if material.quantity > 0 %}
+                                            <button class="btn btn-sm btn-primary" onclick="requestIssuance('{{ material.material_name }}', {{ material.quantity }}, '{{ material.unit }}')">
+                                                <i class="fas fa-hand-paper me-1"></i>
+                                                Request Issue
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">No Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>No materials in stock yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Material Delivery History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Material Delivery History
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if material_records %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Material</th>
+                                    <th>Quantity</th>
+                                    <th>Recorded By</th>
+                                    <th>Photo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in material_records %}
+                                <tr>
+                                    <td>{{ record.recorded_at.strftime('%m/%d/%Y %H:%M') }}</td>
+                                    <td>{{ record.material_name }}</td>
+                                    <td>{{ record.quantity }} {{ record.unit }}</td>
+                                    <td>{{ record.recorded_by }}</td>
+                                    <td>
+                                        {% if record.image_filename %}
+                                            <a href="/uploads/{{ record.image_filename }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-image"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No photo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-truck fa-3x mb-3"></i>
+                        <p>No delivery records yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Issuance Request Modal (for storesperson) -->
+{% if current_user.role == 'storesperson' %}
+<div class="modal fade" id="issuanceRequestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Material Issuance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('request_issuance') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Material Name</label>
+                        <input type="text" class="form-control" name="material_name" id="modalMaterialName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Available Quantity</label>
+                        <input type="text" class="form-control" id="modalAvailableQty" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Requested Quantity</label>
+                        <input type="number" class="form-control" name="quantity_requested" id="modalRequestedQty" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit</label>
+                        <input type="text" class="form-control" name="unit" id="modalUnit" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Purpose/Notes</label>
+                        <textarea class="form-control" name="purpose" rows="3" placeholder="Describe the purpose for this material request..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function requestIssuance(materialName, availableQty, unit) {
+    document.getElementById('modalMaterialName').value = materialName;
+    document.getElementById('modalAvailableQty').value = availableQty + ' ' + unit;
+    document.getElementById('modalRequestedQty').max = availableQty;
+    document.getElementById('modalUnit').value = unit;
+    
+    const modal = new bootstrap.Modal(document.getElementById('issuanceRequestModal'));
+    modal.show();
+}
+</script>
+{% endblock %}
