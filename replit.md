@@ -14,12 +14,12 @@ The application follows a traditional three-tier architecture:
 
 1. **Presentation Layer**: HTML5 templates with Bootstrap 5 for responsive design
 2. **Business Logic Layer**: Flask web framework with Python backend
-3. **Data Storage Layer**: SQLite database for user management and Excel files for material data
+3. **Data Storage Layer**: PostgreSQL database for all persistent data including inventory, transactions, and user management
 
 ### Key Architectural Decisions
 
 - **Flask over FastAPI**: Chosen for its simplicity and extensive ecosystem, suitable for MVP development
-- **Hybrid Data Storage**: SQLite for user authentication and logs, Excel files for material data to enable easy export and analysis
+- **Full Database Storage**: PostgreSQL database for all data including user authentication, inventory, transactions, and system logs
 - **Server-side OCR**: Tesseract OCR processing on the backend to avoid client-side dependencies
 - **Role-based Access**: Simple two-role system (Site Engineer/Storesperson) with session-based authentication
 
@@ -109,10 +109,10 @@ The application follows a traditional three-tier architecture:
 - Logging configuration for monitoring
 
 ### Scalability Notes
-- Excel files can be replaced with proper database tables
+- Full PostgreSQL database implementation provides production-ready data persistence
 - File storage can be moved to cloud storage (S3, etc.)
 - OCR processing can be moved to cloud services (Google Vision API)
-- Database can be upgraded to PostgreSQL for better performance
+- Database includes proper indexing and relationships for optimal performance
 
 ### Security Considerations
 - Password hashing using Werkzeug
@@ -122,17 +122,26 @@ The application follows a traditional three-tier architecture:
 
 ## Recent Changes (July 2025)
 
-### Enhanced Authorization Workflow
-- **Manual Material Entry**: Added option for site engineers to manually input materials with photo documentation
-- **Authorization System**: Implemented request-approval workflow where storekeepers request materials and site engineers approve/deny
-- **Materials Dashboard**: Centralized view of all delivered materials and current stock for both user roles
-- **Daily Usage Reports**: End-of-day reports showing authorized vs unauthorized material issuances
-- **Approval Dashboard**: Site engineer interface for reviewing and processing material requests
+### Multi-Site Inventory Management System (Complete Rewrite)
+- **Database-First Architecture**: Migrated from Excel-based storage to full PostgreSQL database for all inventory data
+- **Multi-Site Support**: Complete support for multiple construction sites with site-specific inventory tracking
+- **FIFO Inventory Valuation**: Implemented proper FIFO (First-In-First-Out) cost accounting for accurate inventory valuation
+- **Enhanced User Management**: Site Engineers can manage multiple sites, Storesmen assigned to specific sites
+- **Advanced Transaction System**: All inventory movements tracked with unique serial numbers and complete audit trail
+- **Real-time Stock Monitoring**: Live stock level tracking with minimum level alerts and notifications
+- **Comprehensive Reporting**: PDF and Excel export capabilities for inventory reports and transaction history
 
-### New Features Added
-1. **IssuanceRequest Model**: Tracks material requests with approval status
-2. **Enhanced IssuanceLog**: Links to authorization requests and tracks authorizing engineer
-3. **Multiple Entry Methods**: OCR auto-extract + manual entry with validation
-4. **Audit Trail**: Complete tracking of who requested, who approved, and when materials were issued
+### Technical Enhancements
+1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations
+2. **Inventory Service Layer**: Centralized business logic for all inventory operations with FIFO calculations
+3. **Report Generation Service**: Automated PDF and Excel report generation with customizable filters
+4. **Role-Based Dashboards**: Separate interfaces optimized for Site Engineers and Storesmen workflows
+5. **Stock Adjustment Features**: Physical count reconciliation with automated variance tracking
+6. **Batch Processing**: Support for bulk material issue requests with approval workflows
 
-The application is designed as an MVP with clear upgrade paths for production deployment, including database migration strategies and cloud service integration options.
+### Data Persistence
+- **PostgreSQL Database**: All data including inventory, transactions, users, and system logs stored in database
+- **Sample Data Initialization**: Automatic creation of demo sites, materials, and initial inventory on first run
+- **No Data Loss**: Complete elimination of memory loss between sessions through proper database storage
+
+The system now provides enterprise-level inventory management capabilities with production-ready data persistence and comprehensive multi-site support.

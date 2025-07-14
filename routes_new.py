@@ -81,6 +81,31 @@ def initialize_default_data():
             for user in users:
                 db.session.add(user)
         
+        # Add sample inventory data if none exists
+        if not Transaction.query.first():
+            from inventory_service import InventoryService
+            
+            # Add sample inventory to each site
+            sample_materials = [
+                {'material_id': 1, 'quantity': 150, 'unit_cost': 12.50},  # Portland Cement
+                {'material_id': 2, 'quantity': 2000, 'unit_cost': 0.85},  # Reinforcement Steel
+                {'material_id': 3, 'quantity': 800, 'unit_cost': 2.25},   # Concrete Blocks
+                {'material_id': 4, 'quantity': 75, 'unit_cost': 25.00},   # Sand
+                {'material_id': 5, 'quantity': 50, 'unit_cost': 30.00},   # Gravel
+            ]
+            
+            for site_id in [1, 2, 3]:  # For each site
+                for material in sample_materials:
+                    InventoryService.receive_material(
+                        site_id=site_id,
+                        material_id=material['material_id'],
+                        quantity=material['quantity'],
+                        unit_cost=material['unit_cost'],
+                        project_code='INITIAL_STOCK',
+                        created_by=1,  # engineer1
+                        notes='Initial stock setup'
+                    )
+        
         db.session.commit()
         logging.info("Default data initialized successfully")
         
