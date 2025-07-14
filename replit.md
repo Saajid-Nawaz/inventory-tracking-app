@@ -159,10 +159,11 @@ The application follows a traditional three-tier architecture:
   - Excel upload template now includes category column for bulk material categorization
   - All existing materials properly categorized across construction, electrical, plumbing, and other relevant categories
 - **Comprehensive Materials Database**: Imported 72 additional construction materials from provided specifications:
-  - Total database now contains 97 materials across 14 categories
-  - Complete coverage of construction needs: Aggregates (13), Construction (14), Electrical (8), Finishing (8), Hardware (11), Masonry (8), Plumbing (9), Roofing (5), Timber (7), Safety (5), Insulation (4), Gardening (3), Landscaping (1), Flooring (1)
+  - Total database now contains 94 materials across 14 categories (cleaned up duplicates)
+  - Complete coverage of construction needs: Aggregates (10), Construction (14), Electrical (8), Finishing (8), Hardware (11), Masonry (8), Plumbing (9), Roofing (5), Timber (7), Safety (5), Insulation (4), Gardening (3), Landscaping (1), Flooring (1)
   - Includes detailed specifications for rebar sizes, electrical components, plumbing fixtures, safety equipment, and finishing materials
-  - All materials imported with proper units (tonnes, EA, meters, pieces, bags, etc.), cost data, and minimum stock levels
+  - All materials have standardized units (tonnes, EA, meters, pieces, bags, etc.), cost data, and minimum stock levels
+  - Removed duplicate entries and standardized naming conventions for consistency
 
 ### Technical Enhancements
 1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations
