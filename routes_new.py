@@ -437,6 +437,223 @@ def add_material():
     return redirect(url_for('manage_materials'))
 
 
+@app.route('/download_material_template')
+@login_required
+def download_material_template():
+    """Download Excel template for material upload"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        import pandas as pd
+        from io import BytesIO
+        
+        # Create sample data for the template
+        template_data = {
+            'Material Name': [
+                'Portland Cement',
+                'Steel Rebar 12mm',
+                'Ready Mix Concrete',
+                'Electrical Wire 2.5mm',
+                'PVC Pipe 110mm'
+            ],
+            'Unit': [
+                'bags',
+                'kg',
+                'm3',
+                'm',
+                'm'
+            ],
+            'Description': [
+                'High quality Portland cement for construction',
+                'Steel reinforcement bars 12mm diameter',
+                'Ready mix concrete M20 grade',
+                'Electrical wire 2.5mm copper',
+                'PVC drainage pipe 110mm diameter'
+            ],
+            'Cost per Unit': [
+                8.50,
+                0.85,
+                120.00,
+                2.30,
+                15.75
+            ],
+            'Minimum Level': [
+                50,
+                500,
+                10,
+                100,
+                20
+            ],
+            'Category': [
+                'Cement',
+                'Steel',
+                'Concrete',
+                'Electrical',
+                'Plumbing'
+            ]
+        }
+        
+        # Create DataFrame
+        df = pd.DataFrame(template_data)
+        
+        # Create Excel file in memory
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Materials')
+            
+            # Get the workbook and worksheet
+            workbook = writer.book
+            worksheet = writer.sheets['Materials']
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='material_upload_template.xlsx'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error creating template: {str(e)}")
+        flash('Error creating template file', 'error')
+        return redirect(url_for('manage_materials'))
+
+
+@app.route('/upload_materials_excel', methods=['POST'])
+@login_required
+def upload_materials_excel():
+    """Handle Excel file upload for bulk material import"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        import pandas as pd
+        from werkzeug.utils import secure_filename
+        
+        # Check if file was uploaded
+        if 'excel_file' not in request.files:
+            flash('No file selected', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        file = request.files['excel_file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Check file extension
+        if not file.filename.lower().endswith(('.xlsx', '.xls')):
+            flash('Invalid file format. Please upload .xlsx or .xls files only.', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Read Excel file
+        skip_header = request.form.get('skip_header') == '1'
+        update_existing = request.form.get('update_existing') == '1'
+        
+        # Read the Excel file
+        df = pd.read_excel(file, header=0 if skip_header else None)
+        
+        # Define expected columns
+        expected_columns = ['Material Name', 'Unit', 'Description', 'Cost per Unit', 'Minimum Level', 'Category']
+        
+        # If no header, assign column names
+        if not skip_header:
+            df.columns = expected_columns[:len(df.columns)]
+        
+        # Validate required columns
+        if 'Material Name' not in df.columns or 'Unit' not in df.columns:
+            flash('Excel file must contain "Material Name" and "Unit" columns', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Process each row
+        added_count = 0
+        updated_count = 0
+        error_count = 0
+        
+        for index, row in df.iterrows():
+            try:
+                # Skip empty rows
+                if pd.isna(row['Material Name']) or row['Material Name'].strip() == '':
+                    continue
+                
+                material_name = str(row['Material Name']).strip()
+                unit = str(row['Unit']).strip()
+                
+                # Validate unit
+                valid_units = ['kg', 'bags', 'tons', 'm3', 'm2', 'm', 'pcs', 'liters']
+                if unit.lower() not in valid_units:
+                    logging.warning(f"Invalid unit '{unit}' for material '{material_name}'. Skipping.")
+                    error_count += 1
+                    continue
+                
+                # Check if material exists
+                existing_material = Material.query.filter_by(name=material_name).first()
+                
+                if existing_material and not update_existing:
+                    logging.info(f"Material '{material_name}' already exists. Skipping.")
+                    continue
+                
+                # Prepare material data
+                material_data = {
+                    'name': material_name,
+                    'unit': unit,
+                    'description': str(row.get('Description', '')).strip() if pd.notna(row.get('Description')) else '',
+                    'cost_per_unit': float(row.get('Cost per Unit', 0)) if pd.notna(row.get('Cost per Unit')) else 0.0,
+                    'minimum_level': float(row.get('Minimum Level', 0)) if pd.notna(row.get('Minimum Level')) else 0.0
+                }
+                
+                if existing_material and update_existing:
+                    # Update existing material
+                    existing_material.unit = material_data['unit']
+                    existing_material.description = material_data['description']
+                    existing_material.cost_per_unit = material_data['cost_per_unit']
+                    existing_material.minimum_level = material_data['minimum_level']
+                    updated_count += 1
+                else:
+                    # Create new material
+                    new_material = Material(**material_data)
+                    db.session.add(new_material)
+                    added_count += 1
+                    
+            except Exception as e:
+                logging.error(f"Error processing row {index}: {str(e)}")
+                error_count += 1
+                continue
+        
+        # Commit all changes
+        db.session.commit()
+        
+        # Show success message
+        success_msg = f"Excel upload completed! Added: {added_count}, Updated: {updated_count}"
+        if error_count > 0:
+            success_msg += f", Errors: {error_count}"
+        
+        flash(success_msg, 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error uploading materials: {str(e)}")
+        flash(f'Error uploading materials: {str(e)}', 'error')
+    
+    return redirect(url_for('manage_materials'))
+
+
 @app.route('/view_stock')
 @login_required
 def view_stock():
