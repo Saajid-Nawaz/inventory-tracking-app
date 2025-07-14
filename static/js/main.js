@@ -161,6 +161,11 @@ function formatNumber(number, decimals = 2) {
 
 // Format currency
 function formatCurrency(amount, currency = 'USD') {
+    // Handle ZMW currency formatting
+    if (currency === 'ZMW') {
+        return 'K' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency

@@ -1368,7 +1368,9 @@ def generate_daily_report():
             return redirect(url_for('reports'))
         
         issues_data = ReportService.generate_daily_issues_report(site_id, report_date)
-        pdf_data = PDFReportGenerator.generate_daily_issues_report(site.name, report_date, issues_data)
+        # Get current currency setting
+        currency = 'USD'  # Default currency setting
+        pdf_data = PDFReportGenerator.generate_daily_issues_report(site.name, report_date, issues_data, currency)
         
         # Create response
         response = send_file(
@@ -1409,6 +1411,8 @@ def generate_stock_report():
             return redirect(url_for('reports'))
         
         stock_data = ReportService.generate_stock_summary_report(site_id)
+        # Get current currency setting
+        currency = 'USD'  # Default currency setting
         
         if format_type == 'excel':
             excel_data = ExcelReportGenerator.generate_stock_summary_excel(site.name, stock_data)
@@ -1419,7 +1423,7 @@ def generate_stock_report():
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
         else:
-            pdf_data = PDFReportGenerator.generate_stock_summary_report(site.name, stock_data)
+            pdf_data = PDFReportGenerator.generate_stock_summary_report(site.name, stock_data, currency)
             return send_file(
                 BytesIO(pdf_data),
                 as_attachment=True,

@@ -18,7 +18,21 @@ class PDFReportGenerator:
     """Generate PDF reports for various inventory data"""
     
     @staticmethod
-    def generate_daily_issues_report(site_name, report_date, issues_data):
+    def format_currency(amount, currency='USD'):
+        """Format currency based on currency type"""
+        if currency == 'ZMW':
+            return f"K{amount:.2f}"
+        elif currency == 'EUR':
+            return f"€{amount:.2f}"
+        elif currency == 'GBP':
+            return f"£{amount:.2f}"
+        elif currency == 'CAD':
+            return f"C${amount:.2f}"
+        else:  # Default to USD
+            return f"${amount:.2f}"
+    
+    @staticmethod
+    def generate_daily_issues_report(site_name, report_date, issues_data, currency='USD'):
         """
         Generate PDF report for daily material issues
         """
@@ -58,14 +72,14 @@ class PDFReportGenerator:
                     issue.created_at.strftime('%H:%M'),
                     issue.material_name,
                     f"{abs(issue.quantity)} {issue.unit}",
-                    f"${issue.unit_cost:.2f}",
-                    f"${abs(issue.total_value):.2f}",
+                    PDFReportGenerator.format_currency(issue.unit_cost, currency),
+                    PDFReportGenerator.format_currency(abs(issue.total_value), currency),
                     issue.issued_to_project_code or 'N/A'
                 ])
                 total_value += abs(issue.total_value)
             
             # Add total row
-            table_data.append(['', '', '', '', '', f"${total_value:.2f}", 'TOTAL'])
+            table_data.append(['', '', '', '', '', PDFReportGenerator.format_currency(total_value, currency), 'TOTAL'])
             
             # Create table
             table = Table(table_data, colWidths=[1.2*inch, 0.8*inch, 1.5*inch, 1*inch, 1*inch, 1*inch, 1*inch])
@@ -94,7 +108,7 @@ class PDFReportGenerator:
         return pdf_data
     
     @staticmethod
-    def generate_stock_summary_report(site_name, stock_data):
+    def generate_stock_summary_report(site_name, stock_data, currency='USD'):
         """
         Generate PDF report for stock summary
         """
@@ -140,8 +154,8 @@ class PDFReportGenerator:
                     item.material_name,
                     item.unit,
                     f"{item.quantity:.2f}",
-                    f"${item.total_value:.2f}",
-                    f"${avg_cost:.2f}",
+                    PDFReportGenerator.format_currency(item.total_value, currency),
+                    PDFReportGenerator.format_currency(avg_cost, currency),
                     f"{item.minimum_level:.2f}",
                     status
                 ])
@@ -173,7 +187,7 @@ class PDFReportGenerator:
             story.append(Spacer(1, 20))
             summary_text = f"""
             <b>Summary:</b><br/>
-            Total Inventory Value: ${total_inventory_value:.2f}<br/>
+            Total Inventory Value: {PDFReportGenerator.format_currency(total_inventory_value, currency)}<br/>
             Total Materials: {len(stock_data)}<br/>
             Low Stock Items: {low_stock_count}
             """

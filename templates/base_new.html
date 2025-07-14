@@ -383,7 +383,13 @@
         }
         
         // Format currency
-        function formatCurrency(amount) {
+        function formatCurrency(amount, currency = 'USD') {
+            // Handle ZMW currency formatting
+            if (currency === 'ZMW') {
+                return 'K' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            
+            // Default to USD formatting
             return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
         
