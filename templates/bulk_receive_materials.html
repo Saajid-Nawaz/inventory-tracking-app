@@ -134,18 +134,30 @@
 {% block scripts %}
 <script>
 $(document).ready(function() {
+    // Store materials data for dynamic row creation
+    var materials = [
+        {% for material in materials %}
+        {
+            id: {{ material.id }},
+            name: "{{ material.name }}",
+            unit: "{{ material.unit }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
     // Add new row
     $('#addRowBtn').click(function() {
+        var materialOptions = '<option value="">Select Material...</option>';
+        materials.forEach(function(material) {
+            materialOptions += '<option value="' + material.id + '" data-unit="' + material.unit + '">' + 
+                              material.name + ' (' + material.unit + ')</option>';
+        });
+        
         var newRow = `
             <tr>
                 <td>
                     <select class="form-select" name="material_id[]" required>
-                        <option value="">Select Material...</option>
-                        {% for material in materials %}
-                        <option value="{{ material.id }}" data-unit="{{ material.unit }}">
-                            {{ material.name }} ({{ material.unit }})
-                        </option>
-                        {% endfor %}
+                        ${materialOptions}
                     </select>
                 </td>
                 <td>
