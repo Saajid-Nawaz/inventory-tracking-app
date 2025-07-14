@@ -256,13 +256,14 @@ class InventoryService:
             Material.unit,
             StockLevel.quantity,
             StockLevel.total_value,
-            Material.minimum_level
+            Material.minimum_level,
+            StockLevel.updated_at
         ).join(Site).join(Material)
         
         if site_id:
             query = query.filter(StockLevel.site_id == site_id)
         
-        return query.all()
+        return query.order_by(Site.name, Material.name).all()
     
     @staticmethod
     def get_low_stock_items(site_id=None):
