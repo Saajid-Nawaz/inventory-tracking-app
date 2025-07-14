@@ -14,7 +14,7 @@ from io import BytesIO
 from app import app, db
 from models_new import (
     User, Site, Material, StockLevel, Transaction, IssueRequest, BatchIssueRequest, 
-    BatchIssueItem, StockAdjustment, FIFOBatch
+    BatchIssueItem, StockAdjustment, FIFOBatch, StockTransferRequest
 )
 from inventory_service import InventoryService, ReportService
 from report_generator import PDFReportGenerator, ExcelReportGenerator
@@ -1754,6 +1754,23 @@ def api_materials():
             'description': material.description,
             'cost_per_unit': material.cost_per_unit,
             'minimum_level': material.minimum_level
+        })
+    
+    return jsonify(data)
+
+
+@app.route('/api/sites')
+@login_required
+def api_sites():
+    sites = Site.query.all()
+    
+    data = []
+    for site in sites:
+        data.append({
+            'id': site.id,
+            'name': site.name,
+            'location': site.location,
+            'created_at': site.created_at.isoformat()
         })
     
     return jsonify(data)
