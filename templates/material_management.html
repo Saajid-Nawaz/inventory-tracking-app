@@ -122,14 +122,9 @@
                         <label for="materialCategory" class="form-label">Category</label>
                         <select class="form-control" id="materialCategory" name="category">
                             <option value="">Select Category</option>
-                            <option value="Cement">Cement</option>
-                            <option value="Steel">Steel</option>
-                            <option value="Concrete">Concrete</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Hardware">Hardware</option>
-                            <option value="Tools">Tools</option>
-                            <option value="Safety">Safety</option>
+                            {% for category in predefined_categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
@@ -197,14 +192,9 @@
                         <label for="editMaterialCategory" class="form-label">Category</label>
                         <select class="form-control" id="editMaterialCategory" name="category">
                             <option value="">Select Category</option>
-                            <option value="Cement">Cement</option>
-                            <option value="Steel">Steel</option>
-                            <option value="Concrete">Concrete</option>
-                            <option value="Electrical">Electrical</option>
-                            <option value="Plumbing">Plumbing</option>
-                            <option value="Hardware">Hardware</option>
-                            <option value="Tools">Tools</option>
-                            <option value="Safety">Safety</option>
+                            {% for category in predefined_categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
