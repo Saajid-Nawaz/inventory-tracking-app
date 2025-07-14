@@ -71,6 +71,12 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('bulk_receive_materials') }}" class="btn btn-success w-100">
+                                <i class="fas fa-boxes fa-2x d-block mb-2"></i>
+                                <span>Bulk Receive</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <a href="{{ url_for('request_materials') }}" class="btn btn-warning w-100">
                                 <i class="fas fa-hand-paper fa-2x d-block mb-2"></i>
                                 <span>Request Materials</span>
@@ -166,8 +172,9 @@
                                     <td>{{ item.material_name }}</td>
                                     <td>{{ item.unit }}</td>
                                     <td>{{ "%.2f"|format(item.quantity) }}</td>
-                                    <td>${{ "%.2f"|format(item.total_value) }}</td>
-                                    <td>${{ "%.2f"|format(item.total_value / item.quantity if item.quantity > 0 else 0) }}</td>
+                                    <!-- Cost information hidden from storesman view -->
+                                    <td><span class="text-muted">Hidden</span></td>
+                                    <td><span class="text-muted">Hidden</span></td>
                                     <td>
                                         {% if item.quantity < item.minimum_level %}
                                             <span class="badge bg-danger">Low Stock</span>

@@ -18,7 +18,7 @@
                     <h5><i class="fas fa-truck me-2"></i>New Material Receipt</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('process_receive_material') }}">
+                    <form method="POST" action="{{ url_for('process_receive_material') }}" enctype="multipart/form-data">
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="material_id" class="form-label">Material</label>
@@ -71,6 +71,14 @@
                             <label for="notes" class="form-label">Notes</label>
                             <textarea class="form-control" id="notes" name="notes" rows="3" 
                                       placeholder="Additional notes about this receipt..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="supporting_document" class="form-label">Supporting Document</label>
+                            <input type="file" class="form-control" id="supporting_document" name="supporting_document" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.gif" 
+                                   placeholder="Upload invoice, GRV, or other supporting document">
+                            <div class="form-text">Upload invoice, GRV, or other supporting document (PDF, JPG, PNG, GIF)</div>
                         </div>
                         
                         <div class="d-grid">

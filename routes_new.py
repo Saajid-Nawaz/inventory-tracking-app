@@ -456,6 +456,99 @@ def receive_materials():
     return render_template('receive_materials.html', materials=materials)
 
 
+@app.route('/bulk_receive_materials')
+@login_required
+def bulk_receive_materials():
+    if current_user.role != 'storesman':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    materials = Material.query.all()
+    return render_template('bulk_receive_materials.html', materials=materials)
+
+
+@app.route('/process_bulk_receive_material', methods=['POST'])
+@login_required
+def process_bulk_receive_material():
+    if current_user.role != 'storesman':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        site_id = current_user.assigned_site_id
+        supplier = request.form.get('supplier')
+        invoice_number = request.form.get('invoice_number')
+        project_code = request.form.get('project_code')
+        notes = request.form.get('notes')
+        
+        # Handle file upload
+        supporting_document_url = None
+        if 'supporting_document' in request.files:
+            file = request.files['supporting_document']
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"bulk_{timestamp}_{filename}"
+                file_path = os.path.join('uploads', filename)
+                
+                # Ensure uploads directory exists
+                os.makedirs('uploads', exist_ok=True)
+                file.save(file_path)
+                supporting_document_url = file_path
+        
+        # Process multiple materials
+        material_ids = request.form.getlist('material_id[]')
+        quantities = request.form.getlist('quantity[]')
+        unit_costs = request.form.getlist('unit_cost[]')
+        
+        transactions = []
+        for i, material_id in enumerate(material_ids):
+            if material_id and quantities[i] and unit_costs[i]:
+                transaction = InventoryService.receive_material(
+                    site_id=site_id,
+                    material_id=int(material_id),
+                    quantity=float(quantities[i]),
+                    unit_cost=float(unit_costs[i]),
+                    project_code=project_code,
+                    created_by=current_user.id,
+                    notes=f"Bulk receipt from {supplier} - Invoice: {invoice_number}. {notes}"
+                )
+                
+                # Update transaction with supporting document URL
+                if supporting_document_url:
+                    transaction.supporting_document_url = supporting_document_url
+                    
+                transactions.append(transaction)
+        
+        db.session.commit()
+        
+        flash(f'Bulk material receipt processed successfully. {len(transactions)} transactions created.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error processing bulk receipt: {str(e)}")
+        flash(f'Error processing bulk receipt: {str(e)}', 'error')
+    
+    return redirect(url_for('bulk_receive_materials'))
+
+
+@app.route('/view_document/<path:filename>')
+@login_required
+def view_document(filename):
+    """View uploaded supporting documents"""
+    try:
+        file_path = os.path.join('uploads', filename)
+        if os.path.exists(file_path):
+            return send_file(file_path)
+        else:
+            flash('Document not found', 'error')
+            return redirect(url_for('storesman_dashboard'))
+    except Exception as e:
+        logging.error(f"Error viewing document: {str(e)}")
+        flash('Error accessing document', 'error')
+        return redirect(url_for('storesman_dashboard'))
+
+
 @app.route('/process_receive_material', methods=['POST'])
 @login_required
 def process_receive_material():
@@ -471,6 +564,21 @@ def process_receive_material():
         project_code = request.form.get('project_code')
         notes = request.form.get('notes')
         
+        # Handle file upload
+        supporting_document_url = None
+        if 'supporting_document' in request.files:
+            file = request.files['supporting_document']
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{timestamp}_{filename}"
+                file_path = os.path.join('uploads', filename)
+                
+                # Ensure uploads directory exists
+                os.makedirs('uploads', exist_ok=True)
+                file.save(file_path)
+                supporting_document_url = file_path
+        
         transaction = InventoryService.receive_material(
             site_id=site_id,
             material_id=material_id,
@@ -480,6 +588,11 @@ def process_receive_material():
             created_by=current_user.id,
             notes=notes
         )
+        
+        # Update transaction with supporting document URL
+        if supporting_document_url:
+            transaction.supporting_document_url = supporting_document_url
+            db.session.commit()
         
         flash(f'Material received successfully. Transaction: {transaction.serial_number}', 'success')
         

@@ -1,0 +1,210 @@
+{% extends "base_new.html" %}
+
+{% block title %}Bulk Receive Materials - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-boxes me-2"></i>Bulk Material Receipt</h1>
+            <p class="text-muted">Record multiple materials received in a single transaction</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-truck me-2"></i>Bulk Material Receipt</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('process_bulk_receive_material') }}" enctype="multipart/form-data">
+                        <!-- Common Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="supplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="supplier" name="supplier" 
+                                       placeholder="Supplier name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="invoice_number" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="invoice_number" name="invoice_number" 
+                                       placeholder="Invoice/GRV number">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="project_code" class="form-label">Project Code</label>
+                                <input type="text" class="form-control" id="project_code" name="project_code" 
+                                       placeholder="Project/job code">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="supporting_document" class="form-label">Supporting Document</label>
+                            <input type="file" class="form-control" id="supporting_document" name="supporting_document" 
+                                   accept=".pdf,.jpg,.jpeg,.png,.gif">
+                            <div class="form-text">Upload invoice, GRV, or other supporting document (PDF, JPG, PNG, GIF)</div>
+                        </div>
+
+                        <!-- Material Items -->
+                        <div class="mb-3">
+                            <h6>Material Items</h6>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="materialsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Material</th>
+                                            <th>Quantity</th>
+                                            <th>Unit Cost</th>
+                                            <th>Total Value</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <select class="form-select" name="material_id[]" required>
+                                                    <option value="">Select Material...</option>
+                                                    {% for material in materials %}
+                                                    <option value="{{ material.id }}" data-unit="{{ material.unit }}">
+                                                        {{ material.name }} ({{ material.unit }})
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control quantity-input" 
+                                                       name="quantity[]" step="0.01" min="0.01" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control unit-cost-input" 
+                                                       name="unit_cost[]" step="0.01" min="0.01" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control total-value" 
+                                                       name="total_value[]" step="0.01" readonly>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger btn-sm remove-row">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="addRowBtn">
+                                <i class="fas fa-plus me-2"></i>Add Another Material
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Additional notes about this bulk receipt..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6>Total Summary</h6>
+                                        <p class="mb-1">Total Items: <span id="totalItems">1</span></p>
+                                        <p class="mb-0">Total Value: $<span id="grandTotal">0.00</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('storesman_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Process Bulk Receipt
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Add new row
+    $('#addRowBtn').click(function() {
+        var newRow = `
+            <tr>
+                <td>
+                    <select class="form-select" name="material_id[]" required>
+                        <option value="">Select Material...</option>
+                        {% for material in materials %}
+                        <option value="{{ material.id }}" data-unit="{{ material.unit }}">
+                            {{ material.name }} ({{ material.unit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control quantity-input" 
+                           name="quantity[]" step="0.01" min="0.01" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control unit-cost-input" 
+                           name="unit_cost[]" step="0.01" min="0.01" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control total-value" 
+                           name="total_value[]" step="0.01" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('#materialsTable tbody').append(newRow);
+        updateTotalItems();
+    });
+
+    // Remove row
+    $(document).on('click', '.remove-row', function() {
+        if ($('#materialsTable tbody tr').length > 1) {
+            $(this).closest('tr').remove();
+            updateTotalItems();
+            updateGrandTotal();
+        } else {
+            alert('At least one material item is required.');
+        }
+    });
+
+    // Calculate total value when quantity or unit cost changes
+    $(document).on('input', '.quantity-input, .unit-cost-input', function() {
+        var row = $(this).closest('tr');
+        var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
+        var unitCost = parseFloat(row.find('.unit-cost-input').val()) || 0;
+        var totalValue = quantity * unitCost;
+        
+        row.find('.total-value').val(totalValue.toFixed(2));
+        updateGrandTotal();
+    });
+
+    function updateTotalItems() {
+        var totalItems = $('#materialsTable tbody tr').length;
+        $('#totalItems').text(totalItems);
+    }
+
+    function updateGrandTotal() {
+        var grandTotal = 0;
+        $('.total-value').each(function() {
+            grandTotal += parseFloat($(this).val()) || 0;
+        });
+        $('#grandTotal').text(grandTotal.toFixed(2));
+    }
+});
+</script>
+{% endblock %}

@@ -101,6 +101,7 @@ class Transaction(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text, nullable=True)
+    supporting_document_url = db.Column(db.String(500), nullable=True)
     
     # Relationships
     creator = db.relationship('User', foreign_keys=[created_by], backref='created_transactions')

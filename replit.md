@@ -131,6 +131,14 @@ The application follows a traditional three-tier architecture:
 - **Real-time Stock Monitoring**: Live stock level tracking with minimum level alerts and notifications
 - **Comprehensive Reporting**: PDF and Excel export capabilities for inventory reports and transaction history
 
+### Latest Enhancements (July 14, 2025)
+- **Document Upload Support**: Added supporting document upload functionality for material receipts (invoices, GRVs)
+- **Bulk Material Receipt**: Implemented bulk receipt functionality for multiple materials in single transaction
+- **Cost Visibility Controls**: Hidden cost/value information from storesman role as per security requirements
+- **Enhanced File Management**: Added document viewing and secure file storage for uploaded supporting documents
+- **Complete Template System**: All dashboard templates and quick actions now fully functional
+- **Role-Based Permission Refinement**: Refined access controls to match exact requirements specifications
+
 ### Technical Enhancements
 1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations
 2. **Inventory Service Layer**: Centralized business logic for all inventory operations with FIFO calculations
