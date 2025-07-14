@@ -133,73 +133,83 @@
 
 {% block scripts %}
 <script>
-// Wait for jQuery to load
-function waitForJQuery() {
-    if (typeof $ !== 'undefined') {
-        initializeBulkReceive();
-    } else {
-        setTimeout(waitForJQuery, 100);
-    }
-}
-
-function initializeBulkReceive() {
-    $(document).ready(function() {
-        // Add new row
-        $('#addRowBtn').click(function() {
-            // Clone the first row
-            var newRow = $('#materialsTable tbody tr:first-child').clone();
-            
-            // Clear the values in the new row
-            newRow.find('input').val('');
-            newRow.find('select').val('');
-            
-            // Add the new row to the table
-            $('#materialsTable tbody').append(newRow);
-            updateTotalItems();
+document.addEventListener('DOMContentLoaded', function() {
+    // Add new row
+    document.getElementById('addRowBtn').addEventListener('click', function() {
+        // Clone the first row
+        var firstRow = document.querySelector('#materialsTable tbody tr:first-child');
+        var newRow = firstRow.cloneNode(true);
+        
+        // Clear the values in the new row
+        var inputs = newRow.querySelectorAll('input');
+        inputs.forEach(function(input) {
+            input.value = '';
         });
+        
+        var selects = newRow.querySelectorAll('select');
+        selects.forEach(function(select) {
+            select.value = '';
+        });
+        
+        // Add the new row to the table
+        document.querySelector('#materialsTable tbody').appendChild(newRow);
+        updateTotalItems();
+    });
 
-        // Remove row
-        $(document).on('click', '.remove-row', function() {
-            if ($('#materialsTable tbody tr').length > 1) {
-                $(this).closest('tr').remove();
+    // Remove row (using event delegation)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-row') || e.target.parentElement.classList.contains('remove-row')) {
+            var tableBody = document.querySelector('#materialsTable tbody');
+            var rows = tableBody.querySelectorAll('tr');
+            
+            if (rows.length > 1) {
+                var button = e.target.classList.contains('remove-row') ? e.target : e.target.parentElement;
+                var row = button.closest('tr');
+                row.remove();
                 updateTotalItems();
                 updateGrandTotal();
             } else {
                 alert('At least one material item is required.');
             }
-        });
+        }
+    });
 
-        // Calculate total value when quantity or unit cost changes
-        $(document).on('input', '.quantity-input, .unit-cost-input', function() {
-            var row = $(this).closest('tr');
-            var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
-            var unitCost = parseFloat(row.find('.unit-cost-input').val()) || 0;
+    // Calculate total value when quantity or unit cost changes (using event delegation)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantity-input') || e.target.classList.contains('unit-cost-input')) {
+            var row = e.target.closest('tr');
+            var quantityInput = row.querySelector('.quantity-input');
+            var unitCostInput = row.querySelector('.unit-cost-input');
+            var totalValueInput = row.querySelector('.total-value');
+            
+            var quantity = parseFloat(quantityInput.value) || 0;
+            var unitCost = parseFloat(unitCostInput.value) || 0;
             var totalValue = quantity * unitCost;
             
-            row.find('.total-value').val(totalValue.toFixed(2));
+            totalValueInput.value = totalValue.toFixed(2);
             updateGrandTotal();
-        });
-
-        function updateTotalItems() {
-            var totalItems = $('#materialsTable tbody tr').length;
-            $('#totalItems').text(totalItems);
         }
-
-        function updateGrandTotal() {
-            var grandTotal = 0;
-            $('.total-value').each(function() {
-                grandTotal += parseFloat($(this).val()) || 0;
-            });
-            $('#grandTotal').text(grandTotal.toFixed(2));
-        }
-
-        // Initialize totals
-        updateTotalItems();
-        updateGrandTotal();
     });
-}
 
-// Start the initialization
-waitForJQuery();
+    function updateTotalItems() {
+        var totalItems = document.querySelectorAll('#materialsTable tbody tr').length;
+        document.getElementById('totalItems').textContent = totalItems;
+    }
+
+    function updateGrandTotal() {
+        var grandTotal = 0;
+        var totalValueInputs = document.querySelectorAll('.total-value');
+        
+        totalValueInputs.forEach(function(input) {
+            grandTotal += parseFloat(input.value) || 0;
+        });
+        
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+    }
+
+    // Initialize totals
+    updateTotalItems();
+    updateGrandTotal();
+});
 </script>
 {% endblock %}
