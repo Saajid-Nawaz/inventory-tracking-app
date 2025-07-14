@@ -12,6 +12,7 @@ from io import BytesIO
 import pandas as pd
 from datetime import datetime
 import os
+import logging
 
 
 class PDFReportGenerator:
@@ -312,6 +313,8 @@ class ExcelReportGenerator:
         
         # Create DataFrame
         data = []
+        logging.info(f"Processing {len(stock_data)} stock items for Excel report")
+        
         for item in stock_data:
             avg_cost = item.total_value / item.quantity if item.quantity > 0 else 0
             status = "LOW STOCK" if item.quantity < item.minimum_level else "OK"
@@ -327,6 +330,7 @@ class ExcelReportGenerator:
             })
         
         df = pd.DataFrame(data)
+        logging.info(f"Created DataFrame with {len(df)} rows")
         
         # Create Excel file with multiple sheets
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
@@ -464,33 +468,69 @@ class ExcelReportGenerator:
         buffer.close()
         
         return excel_data
+    
+    @staticmethod
+    def generate_daily_issues_excel(site_name, report_date, issues_data):
+        """
+        Generate Excel report for daily material issues
+        """
         buffer = BytesIO()
         
         # Create DataFrame
         data = []
-        for txn in transactions_data:
+        logging.info(f"Processing {len(issues_data)} daily issues for Excel report")
+        
+        for issue in issues_data:
             data.append({
-                'Serial Number': txn.serial_number,
-                'Date': txn.created_at.strftime('%Y-%m-%d'),
-                'Time': txn.created_at.strftime('%H:%M:%S'),
-                'Material': txn.material_name,
-                'Unit': txn.unit,
-                'Quantity': txn.quantity,
-                'Unit Cost': txn.unit_cost,
-                'Total Value': txn.total_value,
-                'Type': txn.type.title(),
-                'Project Code': txn.issued_to_project_code or 'N/A',
-                'Notes': txn.notes or 'N/A'
+                'Serial Number': issue.serial_number,
+                'Time': issue.created_at.strftime('%H:%M:%S'),
+                'Material': issue.material_name,
+                'Quantity': issue.quantity,
+                'Unit': issue.unit,
+                'Unit Cost': issue.unit_cost if issue.unit_cost else 0,
+                'Total Value': issue.total_value if issue.total_value else 0,
+                'Project Code': issue.issued_to_project_code or 'N/A',
+                'Notes': issue.notes or 'N/A'
             })
         
         df = pd.DataFrame(data)
+        logging.info(f"Created daily issues DataFrame with {len(df)} rows")
         
-        # Create Excel file
+        # Create Excel file with multiple sheets
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            df.to_excel(writer, sheet_name='Transaction History', index=False)
+            # Main issues data sheet
+            df.to_excel(writer, sheet_name='Daily Issues', index=False)
+            
+            # Summary sheet
+            if not df.empty:
+                summary_data = {
+                    'Metric': [
+                        'Report Date',
+                        'Site Name', 
+                        'Total Issues',
+                        'Total Quantity',
+                        'Total Value',
+                        'Unique Materials'
+                    ],
+                    'Value': [
+                        report_date.strftime('%Y-%m-%d'),
+                        site_name,
+                        len(df),
+                        df['Quantity'].sum(),
+                        df['Total Value'].sum(),
+                        df['Material'].nunique()
+                    ]
+                }
+                summary_df = pd.DataFrame(summary_data)
+                summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
+            # Format the sheets
+            workbook = writer.book
+            
+            # Format daily issues sheet
+            worksheet = writer.sheets['Daily Issues']
             
             # Auto-adjust column widths
-            worksheet = writer.sheets['Transaction History']
             for column in worksheet.columns:
                 max_length = 0
                 column_letter = column[0].column_letter
@@ -500,8 +540,20 @@ class ExcelReportGenerator:
                             max_length = len(str(cell.value))
                     except:
                         pass
-                adjusted_width = (max_length + 2) * 1.2
+                adjusted_width = min((max_length + 2) * 1.2, 50)
                 worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Format currency columns
+            from openpyxl.styles import NamedStyle
+            currency_style = NamedStyle(name="currency")
+            currency_style.number_format = '"ZMW" #,##0.00'
+            
+            # Apply currency formatting to cost and value columns
+            for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
+                if row[5].value is not None:  # Unit Cost column
+                    row[5].style = currency_style
+                if row[6].value is not None:  # Total Value column
+                    row[6].style = currency_style
         
         excel_data = buffer.getvalue()
         buffer.close()

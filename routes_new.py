@@ -1358,6 +1358,7 @@ def reports():
 def generate_daily_report():
     site_id = request.args.get('site_id', type=int)
     report_date = request.args.get('report_date')
+    report_format = request.args.get('format', 'pdf')
     
     if not site_id or not report_date:
         flash('Site and date are required', 'error')
@@ -1378,18 +1379,24 @@ def generate_daily_report():
         
         issues_data = ReportService.generate_daily_issues_report(site_id, report_date)
         # Get current currency setting
-        currency = 'USD'  # Default currency setting
-        pdf_data = PDFReportGenerator.generate_daily_issues_report(site.name, report_date, issues_data, currency)
+        currency = 'ZMW'  # Default currency setting
         
-        # Create response
-        response = send_file(
-            BytesIO(pdf_data),
-            as_attachment=True,
-            download_name=f'daily_issues_{site.name}_{report_date.strftime("%Y%m%d")}.pdf',
-            mimetype='application/pdf'
-        )
-        
-        return response
+        if report_format == 'excel':
+            excel_data = ExcelReportGenerator.generate_daily_issues_excel(site.name, report_date, issues_data)
+            return send_file(
+                BytesIO(excel_data),
+                as_attachment=True,
+                download_name=f'daily_issues_{site.name}_{report_date.strftime("%Y%m%d")}.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        else:
+            pdf_data = PDFReportGenerator.generate_daily_issues_report(site.name, report_date, issues_data, currency)
+            return send_file(
+                BytesIO(pdf_data),
+                as_attachment=True,
+                download_name=f'daily_issues_{site.name}_{report_date.strftime("%Y%m%d")}.pdf',
+                mimetype='application/pdf'
+            )
         
     except Exception as e:
         logging.error(f"Error generating daily report: {str(e)}")
@@ -1420,8 +1427,14 @@ def generate_stock_report():
             return redirect(url_for('reports'))
         
         stock_data = ReportService.generate_stock_summary_report(site_id)
+        # Debug logging
+        logging.info(f"Stock data retrieved for site {site_id}: {len(stock_data)} items")
+        if stock_data:
+            for i, item in enumerate(stock_data[:3]):  # Log first 3 items
+                logging.info(f"Stock item {i+1}: {item.material_name} - {item.quantity} {item.unit}")
+        
         # Get current currency setting
-        currency = 'USD'  # Default currency setting
+        currency = 'ZMW'  # Updated to ZMW
         
         if format_type == 'excel':
             excel_data = ExcelReportGenerator.generate_stock_summary_excel(site.name, stock_data)
