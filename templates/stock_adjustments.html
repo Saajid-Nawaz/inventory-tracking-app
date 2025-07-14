@@ -1,0 +1,252 @@
+{% extends "base_new.html" %}
+
+{% block title %}Stock Adjustments - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-balance-scale me-2"></i>Stock Adjustments</h1>
+            <p class="text-muted">Adjust stock levels based on physical counts and discrepancies</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-edit me-2"></i>New Stock Adjustment</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('process_stock_adjustment') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="material_id" class="form-label">Material</label>
+                                <select class="form-select" id="material_id" name="material_id" required>
+                                    <option value="">Select Material...</option>
+                                    {% for item in stock_summary %}
+                                    <option value="{{ item.material_id }}" data-current="{{ item.quantity }}" data-unit="{{ item.unit }}">
+                                        {{ item.material_name }} (Current: {{ "%.2f"|format(item.quantity) }} {{ item.unit }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="current_stock" class="form-label">Current Stock</label>
+                                <input type="text" class="form-control" id="current_stock" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="unit_display" class="form-label">Unit</label>
+                                <input type="text" class="form-control" id="unit_display" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="physical_count" class="form-label">Physical Count</label>
+                                <input type="number" class="form-control" id="physical_count" name="physical_count" 
+                                       step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="adjustment_quantity" class="form-label">Adjustment</label>
+                                <input type="text" class="form-control" id="adjustment_quantity" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="adjustment_type" class="form-label">Type</label>
+                                <input type="text" class="form-control" id="adjustment_type" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="reason" class="form-label">Reason</label>
+                                <select class="form-select" id="reason" name="reason" required>
+                                    <option value="">Select Reason...</option>
+                                    <option value="Physical Count Discrepancy">Physical Count Discrepancy</option>
+                                    <option value="Damaged Materials">Damaged Materials</option>
+                                    <option value="Lost/Stolen">Lost/Stolen</option>
+                                    <option value="Expired Materials">Expired Materials</option>
+                                    <option value="System Error Correction">System Error Correction</option>
+                                    <option value="Found Materials">Found Materials</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Detailed explanation of the adjustment..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-2"></i>Submit Adjustment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Adjustment Impact</h5>
+                </div>
+                <div class="card-body">
+                    <div id="adjustment-info" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Current Stock:</label>
+                                <div id="impact-current" class="fw-bold">-</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Physical Count:</label>
+                                <div id="impact-physical" class="fw-bold">-</div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="form-label">Net Adjustment:</label>
+                                <div id="impact-net" class="fw-bold fs-5">-</div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <label class="form-label">New Stock Level:</label>
+                                <div id="impact-new" class="fw-bold text-primary fs-5">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="no-material-selected" class="text-center py-4">
+                        <i class="fas fa-arrow-left fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Select a material to see adjustment impact</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Important Notes</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>All adjustments require approval</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Adjustments create audit trail</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Physical count should be verified</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Provide detailed reasoning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const materialSelect = document.getElementById('material_id');
+    const currentStockInput = document.getElementById('current_stock');
+    const unitDisplay = document.getElementById('unit_display');
+    const physicalCountInput = document.getElementById('physical_count');
+    const adjustmentQuantityInput = document.getElementById('adjustment_quantity');
+    const adjustmentTypeInput = document.getElementById('adjustment_type');
+    
+    const adjustmentInfo = document.getElementById('adjustment-info');
+    const noMaterialSelected = document.getElementById('no-material-selected');
+    
+    let selectedMaterial = null;
+    
+    materialSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            selectedMaterial = {
+                id: selectedOption.value,
+                current: parseFloat(selectedOption.dataset.current),
+                unit: selectedOption.dataset.unit,
+                name: selectedOption.textContent.split(' (')[0]
+            };
+            
+            currentStockInput.value = selectedMaterial.current.toFixed(2);
+            unitDisplay.value = selectedMaterial.unit;
+            
+            adjustmentInfo.style.display = 'block';
+            noMaterialSelected.style.display = 'none';
+            
+            updateAdjustmentInfo();
+        } else {
+            selectedMaterial = null;
+            currentStockInput.value = '';
+            unitDisplay.value = '';
+            adjustmentInfo.style.display = 'none';
+            noMaterialSelected.style.display = 'block';
+            clearAdjustmentInfo();
+        }
+    });
+    
+    physicalCountInput.addEventListener('input', function() {
+        if (selectedMaterial) {
+            const physicalCount = parseFloat(this.value) || 0;
+            const adjustment = physicalCount - selectedMaterial.current;
+            
+            adjustmentQuantityInput.value = adjustment.toFixed(2);
+            
+            if (adjustment > 0) {
+                adjustmentTypeInput.value = 'Increase';
+                adjustmentTypeInput.className = 'form-control text-success';
+            } else if (adjustment < 0) {
+                adjustmentTypeInput.value = 'Decrease';
+                adjustmentTypeInput.className = 'form-control text-danger';
+            } else {
+                adjustmentTypeInput.value = 'No Change';
+                adjustmentTypeInput.className = 'form-control text-muted';
+            }
+            
+            updateAdjustmentInfo();
+        }
+    });
+    
+    function updateAdjustmentInfo() {
+        if (selectedMaterial) {
+            const physicalCount = parseFloat(physicalCountInput.value) || 0;
+            const adjustment = physicalCount - selectedMaterial.current;
+            
+            document.getElementById('impact-current').textContent = 
+                selectedMaterial.current.toFixed(2) + ' ' + selectedMaterial.unit;
+            document.getElementById('impact-physical').textContent = 
+                physicalCount.toFixed(2) + ' ' + selectedMaterial.unit;
+            
+            const netElement = document.getElementById('impact-net');
+            const newElement = document.getElementById('impact-new');
+            
+            if (adjustment > 0) {
+                netElement.textContent = '+' + adjustment.toFixed(2) + ' ' + selectedMaterial.unit;
+                netElement.className = 'fw-bold fs-5 text-success';
+            } else if (adjustment < 0) {
+                netElement.textContent = adjustment.toFixed(2) + ' ' + selectedMaterial.unit;
+                netElement.className = 'fw-bold fs-5 text-danger';
+            } else {
+                netElement.textContent = '0.00 ' + selectedMaterial.unit;
+                netElement.className = 'fw-bold fs-5 text-muted';
+            }
+            
+            newElement.textContent = physicalCount.toFixed(2) + ' ' + selectedMaterial.unit;
+        }
+    }
+    
+    function clearAdjustmentInfo() {
+        adjustmentQuantityInput.value = '';
+        adjustmentTypeInput.value = '';
+        adjustmentTypeInput.className = 'form-control';
+        
+        document.getElementById('impact-current').textContent = '-';
+        document.getElementById('impact-physical').textContent = '-';
+        document.getElementById('impact-net').textContent = '-';
+        document.getElementById('impact-new').textContent = '-';
+    }
+});
+</script>
+{% endblock %}

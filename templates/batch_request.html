@@ -1,0 +1,212 @@
+{% extends "base_new.html" %}
+
+{% block title %}Batch Request - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-layer-group me-2"></i>Batch Material Request</h1>
+            <p class="text-muted">Submit multiple materials in a single request for approval</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus-circle me-2"></i>New Batch Request</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('submit_batch_request') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="project_code" class="form-label">Project Code</label>
+                                <input type="text" class="form-control" id="project_code" name="project_code" 
+                                       placeholder="e.g., PROJ-2025-001" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Purpose/Notes</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="2" 
+                                      placeholder="Describe the purpose of this batch request..."></textarea>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6>Materials</h6>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addMaterialRow()">
+                                <i class="fas fa-plus me-1"></i>Add Material
+                            </button>
+                        </div>
+                        
+                        <div id="materials-container">
+                            <div class="material-row row mb-3">
+                                <div class="col-md-5">
+                                    <select class="form-select" name="material_id_0" required>
+                                        <option value="">Select Material...</option>
+                                        {% for item in stock_summary %}
+                                        <option value="{{ item.material_id }}" data-stock="{{ item.quantity }}" data-unit="{{ item.unit }}">
+                                            {{ item.material_name }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control" name="quantity_0" 
+                                           placeholder="Quantity" step="0.01" min="0.01" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control unit-display" readonly placeholder="Unit">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeMaterialRow(this)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Batch Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Batch Requests</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_batch_requests %}
+                    <div class="list-group">
+                        {% for request in recent_batch_requests %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ request.batch_id }}</h6>
+                                    <p class="mb-1">{{ request.batch_items|length }} items</p>
+                                    <small class="text-muted">{{ request.requested_at.strftime('%m/%d/%Y %H:%M') }}</small>
+                                </div>
+                                <div>
+                                    {% if request.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Denied</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if request.project_code %}
+                            <small class="text-muted">Project: {{ request.project_code }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent batch requests</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let materialRowCount = 1;
+
+function addMaterialRow() {
+    const container = document.getElementById('materials-container');
+    const stockOptions = `
+        <option value="">Select Material...</option>
+        {% for item in stock_summary %}
+        <option value="{{ item.material_id }}" data-stock="{{ item.quantity }}" data-unit="{{ item.unit }}">
+            {{ item.material_name }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
+        </option>
+        {% endfor %}
+    `;
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'material-row row mb-3';
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <select class="form-select" name="material_id_${materialRowCount}" required>
+                ${stockOptions}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" class="form-control" name="quantity_${materialRowCount}" 
+                   placeholder="Quantity" step="0.01" min="0.01" required>
+        </div>
+        <div class="col-md-2">
+            <input type="text" class="form-control unit-display" readonly placeholder="Unit">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeMaterialRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+    materialRowCount++;
+    
+    // Add event listeners to the new row
+    setupMaterialRowEvents(newRow);
+}
+
+function removeMaterialRow(button) {
+    const container = document.getElementById('materials-container');
+    if (container.children.length > 1) {
+        button.closest('.material-row').remove();
+    }
+}
+
+function setupMaterialRowEvents(row) {
+    const select = row.querySelector('select');
+    const unitDisplay = row.querySelector('.unit-display');
+    const quantityInput = row.querySelector('input[type="number"]');
+    
+    select.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            const unit = selectedOption.dataset.unit;
+            const stock = parseFloat(selectedOption.dataset.stock);
+            
+            unitDisplay.value = unit;
+            quantityInput.max = stock;
+            
+            if (stock <= 0) {
+                quantityInput.disabled = true;
+                quantityInput.placeholder = 'No stock available';
+            } else {
+                quantityInput.disabled = false;
+                quantityInput.placeholder = 'Quantity';
+            }
+        } else {
+            unitDisplay.value = '';
+            quantityInput.disabled = false;
+            quantityInput.placeholder = 'Quantity';
+        }
+    });
+}
+
+// Initialize existing rows
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.material-row').forEach(setupMaterialRowEvents);
+});
+</script>
+{% endblock %}

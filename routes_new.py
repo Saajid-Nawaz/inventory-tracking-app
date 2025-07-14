@@ -771,20 +771,36 @@ def process_stock_adjustment():
     try:
         site_id = current_user.assigned_site_id
         material_id = int(request.form.get('material_id'))
-        expected_quantity = float(request.form.get('expected_quantity'))
-        actual_quantity = float(request.form.get('actual_quantity'))
+        physical_count = float(request.form.get('physical_count'))
         reason = request.form.get('reason')
+        notes = request.form.get('notes', '')
         
-        adjustment = InventoryService.adjust_stock(
+        # Get current stock level
+        current_stock = db.session.query(StockLevel).filter_by(
+            site_id=site_id,
+            material_id=material_id
+        ).first()
+        
+        if not current_stock:
+            flash('Material not found in stock', 'error')
+            return redirect(url_for('stock_adjustments'))
+        
+        expected_quantity = current_stock.quantity
+        
+        # Use inventory service to adjust stock
+        InventoryService.adjust_stock(
             site_id=site_id,
             material_id=material_id,
             expected_quantity=expected_quantity,
-            actual_quantity=actual_quantity,
+            actual_quantity=physical_count,
             reason=reason,
             adjusted_by=current_user.id
         )
         
-        flash(f'Stock adjustment completed. Discrepancy: {adjustment.discrepancy}', 'success')
+        adjustment_type = 'increase' if physical_count > expected_quantity else 'decrease'
+        adjustment_amount = abs(physical_count - expected_quantity)
+        
+        flash(f'Stock adjustment recorded: {adjustment_type} of {adjustment_amount:.2f} units', 'success')
         
     except Exception as e:
         logging.error(f"Error processing stock adjustment: {str(e)}")

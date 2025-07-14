@@ -1,0 +1,210 @@
+{% extends "base_new.html" %}
+
+{% block title %}Receive Materials - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-plus-circle me-2"></i>Receive Materials</h1>
+            <p class="text-muted">Record new materials received into inventory</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-truck me-2"></i>New Material Receipt</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('process_receive_material') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="material_id" class="form-label">Material</label>
+                                <select class="form-select" id="material_id" name="material_id" required>
+                                    <option value="">Select Material...</option>
+                                    {% for material in materials %}
+                                    <option value="{{ material.id }}" data-unit="{{ material.unit }}" data-cost="{{ material.cost_per_unit }}">
+                                        {{ material.name }} ({{ material.unit }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       step="0.01" min="0.01" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="unit_display" class="form-label">Unit</label>
+                                <input type="text" class="form-control" id="unit_display" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="unit_cost" class="form-label">Unit Cost ($)</label>
+                                <input type="number" class="form-control" id="unit_cost" name="unit_cost" 
+                                       step="0.01" min="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="total_cost" class="form-label">Total Cost ($)</label>
+                                <input type="text" class="form-control" id="total_cost" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="project_code" class="form-label">Project Code</label>
+                                <input type="text" class="form-control" id="project_code" name="project_code" 
+                                       placeholder="e.g., PROJ-2025-001">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="supplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="supplier" name="supplier" 
+                                       placeholder="Supplier name">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Additional notes about this receipt..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Receive Material
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Material Information</h5>
+                </div>
+                <div class="card-body">
+                    <div id="material-info" style="display: none;">
+                        <p><strong>Description:</strong> <span id="material-description"></span></p>
+                        <p><strong>Standard Unit:</strong> <span id="material-unit"></span></p>
+                        <p><strong>Standard Cost:</strong> $<span id="material-cost"></span></p>
+                        <p><strong>Minimum Level:</strong> <span id="material-min-level"></span></p>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="useStandardCost()">
+                                <i class="fas fa-magic me-1"></i>Use Standard Cost
+                            </button>
+                        </div>
+                    </div>
+                    <div id="no-material-selected" class="text-center py-4">
+                        <i class="fas fa-arrow-left fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Select a material to see details</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-calculator me-2"></i>Cost Calculator</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label">Quantity:</label>
+                            <div id="calc-quantity" class="fw-bold">-</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Unit Cost:</label>
+                            <div id="calc-unit-cost" class="fw-bold">-</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label">Total Cost:</label>
+                            <div id="calc-total" class="fw-bold text-primary fs-5">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const materialSelect = document.getElementById('material_id');
+    const quantityInput = document.getElementById('quantity');
+    const unitCostInput = document.getElementById('unit_cost');
+    const unitDisplay = document.getElementById('unit_display');
+    const totalCostInput = document.getElementById('total_cost');
+    
+    const materialInfo = document.getElementById('material-info');
+    const noMaterialSelected = document.getElementById('no-material-selected');
+    
+    let selectedMaterial = null;
+    
+    materialSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            selectedMaterial = {
+                id: selectedOption.value,
+                unit: selectedOption.dataset.unit,
+                cost: parseFloat(selectedOption.dataset.cost),
+                name: selectedOption.textContent.split(' (')[0]
+            };
+            
+            unitDisplay.value = selectedMaterial.unit;
+            unitCostInput.value = selectedMaterial.cost;
+            
+            // Update material info panel
+            document.getElementById('material-description').textContent = selectedMaterial.name;
+            document.getElementById('material-unit').textContent = selectedMaterial.unit;
+            document.getElementById('material-cost').textContent = selectedMaterial.cost.toFixed(2);
+            document.getElementById('material-min-level').textContent = 'Standard';
+            
+            materialInfo.style.display = 'block';
+            noMaterialSelected.style.display = 'none';
+            
+            calculateTotal();
+        } else {
+            selectedMaterial = null;
+            unitDisplay.value = '';
+            unitCostInput.value = '';
+            materialInfo.style.display = 'none';
+            noMaterialSelected.style.display = 'block';
+            calculateTotal();
+        }
+    });
+    
+    quantityInput.addEventListener('input', calculateTotal);
+    unitCostInput.addEventListener('input', calculateTotal);
+    
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitCost = parseFloat(unitCostInput.value) || 0;
+        const total = quantity * unitCost;
+        
+        totalCostInput.value = total.toFixed(2);
+        
+        // Update calculator display
+        document.getElementById('calc-quantity').textContent = quantity > 0 ? quantity.toFixed(2) : '-';
+        document.getElementById('calc-unit-cost').textContent = unitCost > 0 ? '$' + unitCost.toFixed(2) : '-';
+        document.getElementById('calc-total').textContent = '$' + total.toFixed(2);
+    }
+    
+    window.useStandardCost = function() {
+        if (selectedMaterial) {
+            unitCostInput.value = selectedMaterial.cost;
+            calculateTotal();
+        }
+    };
+});
+</script>
+{% endblock %}
