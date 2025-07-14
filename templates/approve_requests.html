@@ -39,79 +39,79 @@
         <!-- Individual Requests Tab -->
         <div class="tab-pane fade show active" id="individual" role="tabpanel">
             {% if individual_requests %}
-                {% for request in individual_requests %}
-                <div class="card mb-3">
+                <div class="card">
                     <div class="card-header">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-cube me-2"></i>{{ request.material.name }}
-                                    <span class="badge bg-secondary ms-2">{{ request.material.unit }}</span>
-                                </h5>
-                                <small class="text-muted">
-                                    Request #{{ request.id }} • {{ request.requested_at.strftime('%m/%d/%Y %H:%M') }}
-                                </small>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <span class="badge bg-warning">{{ request.status|title }}</span>
-                            </div>
-                        </div>
+                        <h5><i class="fas fa-cube me-2"></i>Pending Individual Requests</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Requested By:</strong> {{ request.requester.username }}</p>
-                                <p><strong>Site:</strong> {{ request.site.name }}</p>
-                                <p><strong>Quantity:</strong> {{ "%.2f"|format(request.quantity_requested) }} {{ request.material.unit }}</p>
-                                {% if request.project_code %}
-                                    <p><strong>Project Code:</strong> {{ request.project_code }}</p>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Current Stock:</strong> 
-                                    {% set stock = stock_levels.get(request.site_id, {}).get(request.material_id, {}) %}
-                                    {% if stock %}
-                                        {{ "%.2f"|format(stock.quantity) }} {{ request.material.unit }}
-                                        {% if stock.quantity < request.quantity_requested %}
-                                            <span class="badge bg-danger ms-2">Insufficient Stock</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-danger">No stock available</span>
-                                    {% endif %}
-                                </p>
-                                {% if request.purpose %}
-                                    <p><strong>Purpose:</strong> {{ request.purpose }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <form method="POST" action="{{ url_for('process_individual_request') }}" class="d-inline">
-                                    <input type="hidden" name="request_id" value="{{ request.id }}">
-                                    <input type="hidden" name="action" value="approve">
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <input type="text" name="review_notes" class="form-control" 
-                                                   placeholder="Optional approval notes...">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <button type="submit" class="btn btn-success me-2"
-                                                    {% if not stock or stock.quantity < request.quantity_requested %}disabled{% endif %}>
-                                                <i class="fas fa-check me-1"></i>Approve
-                                            </button>
-                                            <button type="button" class="btn btn-danger" 
-                                                    onclick="showDenyModal({{ request.id }})">
-                                                <i class="fas fa-times me-1"></i>Deny
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Material</th>
+                                        <th>Requested By</th>
+                                        <th>Site</th>
+                                        <th>Quantity</th>
+                                        <th>Stock Available</th>
+                                        <th>Project Code</th>
+                                        <th>Purpose</th>
+                                        <th>Request Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in individual_requests %}
+                                    <tr>
+                                        <td>{{ request.id }}</td>
+                                        <td>
+                                            <strong>{{ request.material.name }}</strong>
+                                            <br><small class="text-muted">{{ request.material.unit }}</small>
+                                        </td>
+                                        <td>{{ request.requester.username }}</td>
+                                        <td>{{ request.site.name }}</td>
+                                        <td>{{ "%.2f"|format(request.quantity_requested) }} {{ request.material.unit }}</td>
+                                        <td>
+                                            {% set stock = stock_levels.get(request.site_id, {}).get(request.material_id, {}) %}
+                                            {% if stock %}
+                                                {{ "%.2f"|format(stock.quantity) }}
+                                                {% if stock.quantity < request.quantity_requested %}
+                                                    <span class="badge bg-danger ms-1">Low</span>
+                                                {% else %}
+                                                    <span class="badge bg-success ms-1">OK</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-danger">No stock</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ request.project_code or 'N/A' }}</td>
+                                        <td>{{ request.purpose or 'N/A' }}</td>
+                                        <td>{{ request.requested_at.strftime('%m/%d/%Y %H:%M') }}</td>
+                                        <td><span class="badge bg-warning">{{ request.status|title }}</span></td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <form method="POST" action="{{ url_for('process_individual_request') }}" class="d-inline">
+                                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                                    <input type="hidden" name="action" value="approve">
+                                                    <button type="submit" class="btn btn-success btn-sm me-1"
+                                                            {% if not stock or stock.quantity < request.quantity_requested %}disabled{% endif %}>
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="showDenyModal({{ request.id }})">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             {% else %}
                 <div class="card">
                     <div class="card-body text-center py-5">
