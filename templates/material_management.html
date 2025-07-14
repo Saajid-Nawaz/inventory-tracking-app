@@ -1,0 +1,327 @@
+{% extends "base_new.html" %}
+
+{% block title %}Material Management - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-cogs me-2"></i>Material Management</h1>
+            <p class="text-muted">Manage material definitions, categories, and pricing</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list me-2"></i>All Materials</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                        <i class="fas fa-plus me-1"></i>Add Material
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if materials %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Material Name</th>
+                                        <th>Unit</th>
+                                        <th>Standard Cost</th>
+                                        <th>Min Level</th>
+                                        <th>Total Stock</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for material in materials %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ material.name }}</div>
+                                            <small class="text-muted">{{ material.description }}</small>
+                                        </td>
+                                        <td>{{ material.unit }}</td>
+                                        <td>${{ "%.2f"|format(material.cost_per_unit) }}</td>
+                                        <td>{{ material.minimum_level }}</td>
+                                        <td>
+                                            {% set total_stock = material_stocks.get(material.id, 0) %}
+                                            <span class="fw-bold">{{ "%.2f"|format(total_stock) }}</span>
+                                            {% if total_stock < material.minimum_level %}
+                                                <span class="badge bg-danger ms-2">Low</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-outline-primary btn-sm" 
+                                                        onclick="editMaterial({{ material.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-info btn-sm" 
+                                                        onclick="viewMaterialHistory({{ material.id }})">
+                                                    <i class="fas fa-history"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-cube fa-3x text-muted mb-3"></i>
+                            <h5>No materials configured</h5>
+                            <p class="text-muted">Add materials to start tracking inventory</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Material Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ materials|length }}</div>
+                                <small class="text-muted">Total Materials</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ low_stock_count }}</div>
+                                <small class="text-muted">Low Stock Items</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-success">${{ "%.0f"|format(total_inventory_value) }}</div>
+                                <small class="text-muted">Total Value</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-info">${{ "%.2f"|format(average_cost) }}</div>
+                                <small class="text-muted">Avg Cost</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert</h5>
+                </div>
+                <div class="card-body">
+                    {% if low_stock_materials %}
+                        <div class="list-group">
+                            {% for material in low_stock_materials %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ material.name }}</h6>
+                                        <small class="text-muted">{{ material.description }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-danger">
+                                            {{ "%.1f"|format(material_stocks.get(material.id, 0)) }}
+                                        </div>
+                                        <small class="text-muted">Min: {{ material.minimum_level }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="text-muted small">All materials above minimum levels</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="bulkUpdatePrices()">
+                            <i class="fas fa-dollar-sign me-2"></i>Bulk Update Prices
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportMaterialsList()">
+                            <i class="fas fa-download me-2"></i>Export Materials List
+                        </button>
+                        <button class="btn btn-outline-success" onclick="importMaterials()">
+                            <i class="fas fa-upload me-2"></i>Import Materials
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_material') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="materialName" class="form-label">Material Name</label>
+                        <input type="text" class="form-control" name="name" id="materialName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="materialDescription" class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="materialDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="materialUnit" class="form-label">Unit</label>
+                                <select class="form-select" name="unit" id="materialUnit" required>
+                                    <option value="">Select Unit...</option>
+                                    <option value="bags">bags</option>
+                                    <option value="kg">kg</option>
+                                    <option value="tons">tons</option>
+                                    <option value="pieces">pieces</option>
+                                    <option value="meters">meters</option>
+                                    <option value="liters">liters</option>
+                                    <option value="cubic meters">cubic meters</option>
+                                    <option value="boxes">boxes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="materialCost" class="form-label">Cost per Unit ($)</label>
+                                <input type="number" class="form-control" name="cost_per_unit" id="materialCost" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="materialMinLevel" class="form-label">Minimum Stock Level</label>
+                        <input type="number" class="form-control" name="minimum_level" id="materialMinLevel" 
+                               min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Material Modal -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Material</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_material') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="material_id" id="editMaterialId">
+                    <div class="mb-3">
+                        <label for="editMaterialName" class="form-label">Material Name</label>
+                        <input type="text" class="form-control" name="name" id="editMaterialName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editMaterialDescription" class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="editMaterialDescription" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editMaterialUnit" class="form-label">Unit</label>
+                                <select class="form-select" name="unit" id="editMaterialUnit" required>
+                                    <option value="bags">bags</option>
+                                    <option value="kg">kg</option>
+                                    <option value="tons">tons</option>
+                                    <option value="pieces">pieces</option>
+                                    <option value="meters">meters</option>
+                                    <option value="liters">liters</option>
+                                    <option value="cubic meters">cubic meters</option>
+                                    <option value="boxes">boxes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editMaterialCost" class="form-label">Cost per Unit ($)</label>
+                                <input type="number" class="form-control" name="cost_per_unit" id="editMaterialCost" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editMaterialMinLevel" class="form-label">Minimum Stock Level</label>
+                        <input type="number" class="form-control" name="minimum_level" id="editMaterialMinLevel" 
+                               min="0" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function editMaterial(materialId) {
+    // Fetch material data and populate edit modal
+    fetch(`/api/materials/${materialId}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editMaterialId').value = data.id;
+            document.getElementById('editMaterialName').value = data.name;
+            document.getElementById('editMaterialDescription').value = data.description;
+            document.getElementById('editMaterialUnit').value = data.unit;
+            document.getElementById('editMaterialCost').value = data.cost_per_unit;
+            document.getElementById('editMaterialMinLevel').value = data.minimum_level;
+            
+            new bootstrap.Modal(document.getElementById('editMaterialModal')).show();
+        });
+}
+
+function viewMaterialHistory(materialId) {
+    // Redirect to material history page
+    window.location.href = `/material_history/${materialId}`;
+}
+
+function bulkUpdatePrices() {
+    alert('Bulk price update feature coming soon!');
+}
+
+function exportMaterialsList() {
+    window.location.href = '/export_materials';
+}
+
+function importMaterials() {
+    alert('Material import feature coming soon!');
+}
+</script>
+{% endblock %}

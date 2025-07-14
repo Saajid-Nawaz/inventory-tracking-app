@@ -1,0 +1,324 @@
+{% extends "base_new.html" %}
+
+{% block title %}System Settings - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-cog me-2"></i>System Settings</h1>
+            <p class="text-muted">Configure system-wide settings and preferences</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-sliders-h me-2"></i>General Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_system_settings') }}">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="company_name" class="form-label">Company Name</label>
+                                <input type="text" class="form-control" name="company_name" id="company_name" 
+                                       value="{{ settings.company_name or 'Construction Company' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="currency" class="form-label">Default Currency</label>
+                                <select class="form-select" name="currency" id="currency">
+                                    <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                                    <option value="EUR" {% if settings.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                    <option value="GBP" {% if settings.currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                                    <option value="CAD" {% if settings.currency == 'CAD' %}selected{% endif %}>CAD ($)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="default_tax_rate" class="form-label">Default Tax Rate (%)</label>
+                                <input type="number" class="form-control" name="default_tax_rate" id="default_tax_rate" 
+                                       value="{{ settings.default_tax_rate or 0 }}" step="0.01" min="0" max="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="low_stock_threshold" class="form-label">Low Stock Threshold (%)</label>
+                                <input type="number" class="form-control" name="low_stock_threshold" id="low_stock_threshold" 
+                                       value="{{ settings.low_stock_threshold or 20 }}" min="1" max="100">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="auto_approve_requests" 
+                                       id="auto_approve_requests" {% if settings.auto_approve_requests %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_approve_requests">
+                                    Auto-approve requests when sufficient stock is available
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="email_notifications" 
+                                       id="email_notifications" {% if settings.email_notifications %}checked{% endif %}>
+                                <label class="form-check-label" for="email_notifications">
+                                    Enable email notifications for low stock alerts
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-users me-2"></i>User Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Assigned Site</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'primary' if user.role == 'site_engineer' else 'secondary' }}">
+                                            {{ user.role.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.assigned_site %}
+                                            {{ user.assigned_site.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ user.last_login.strftime('%m/%d/%Y') if user.last_login else 'Never' }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-outline-primary btn-sm" 
+                                                    onclick="editUser({{ user.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if user.id != current_user.id %}
+                                            <button class="btn btn-outline-danger btn-sm" 
+                                                    onclick="resetPassword({{ user.id }})">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus me-2"></i>Add User
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>System Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td>System Version:</td>
+                            <td><span class="badge bg-info">v2.0.0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Database Size:</td>
+                            <td>{{ database_size }}MB</td>
+                        </tr>
+                        <tr>
+                            <td>Total Transactions:</td>
+                            <td>{{ total_transactions }}</td>
+                        </tr>
+                        <tr>
+                            <td>Active Users:</td>
+                            <td>{{ active_users }}</td>
+                        </tr>
+                        <tr>
+                            <td>Last Backup:</td>
+                            <td>{{ last_backup or 'Never' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools me-2"></i>System Tools</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="backupDatabase()">
+                            <i class="fas fa-download me-2"></i>Backup Database
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="clearOldLogs()">
+                            <i class="fas fa-trash me-2"></i>Clear Old Logs
+                        </button>
+                        <button class="btn btn-outline-info" onclick="generateSystemReport()">
+                            <i class="fas fa-file-alt me-2"></i>System Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <small class="text-muted">Today's Transactions:</small>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="fw-bold">{{ today_transactions }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <small class="text-muted">Pending Approvals:</small>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="fw-bold text-warning">{{ pending_approvals }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <small class="text-muted">Low Stock Items:</small>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="fw-bold text-danger">{{ low_stock_items }}</span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Total Inventory Value:</small>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="fw-bold text-success">${{ "%.0f"|format(total_inventory_value) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" id="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" name="role" id="role" required>
+                            <option value="">Select Role...</option>
+                            <option value="site_engineer">Site Engineer</option>
+                            <option value="storesman">Storesman</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_site_id" class="form-label">Assigned Site</label>
+                        <select class="form-select" name="assigned_site_id" id="assigned_site_id">
+                            <option value="">Select Site...</option>
+                            {% for site in sites %}
+                            <option value="{{ site.id }}">{{ site.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Required for Storesman role</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('role').addEventListener('change', function() {
+    const assignedSiteField = document.getElementById('assigned_site_id');
+    if (this.value === 'storesman') {
+        assignedSiteField.required = true;
+        assignedSiteField.parentElement.classList.add('required');
+    } else {
+        assignedSiteField.required = false;
+        assignedSiteField.parentElement.classList.remove('required');
+    }
+});
+
+function editUser(userId) {
+    alert('Edit user functionality coming soon!');
+}
+
+function resetPassword(userId) {
+    if (confirm('Are you sure you want to reset this user\'s password?')) {
+        // Implement password reset
+        alert('Password reset functionality coming soon!');
+    }
+}
+
+function backupDatabase() {
+    if (confirm('Create a database backup? This may take a few minutes.')) {
+        // Implement database backup
+        alert('Database backup functionality coming soon!');
+    }
+}
+
+function clearOldLogs() {
+    if (confirm('Clear logs older than 30 days? This cannot be undone.')) {
+        // Implement log cleanup
+        alert('Log cleanup functionality coming soon!');
+    }
+}
+
+function generateSystemReport() {
+    // Implement system report generation
+    alert('System report generation coming soon!');
+}
+</script>
+{% endblock %}

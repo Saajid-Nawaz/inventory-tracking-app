@@ -1,0 +1,214 @@
+{% extends "base_new.html" %}
+
+{% block title %}Manage Sites - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-building me-2"></i>Manage Construction Sites</h1>
+            <p class="text-muted">Oversee all construction sites and their inventory</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>All Sites</h5>
+                </div>
+                <div class="card-body">
+                    {% if sites %}
+                        {% for site in sites %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-3">
+                                        <h6 class="mb-1">{{ site.name }}</h6>
+                                        <small class="text-muted">{{ site.location }}</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Total Materials:</small>
+                                        <div class="fw-bold">{{ site_stats[site.id].total_materials }}</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Total Value:</small>
+                                        <div class="fw-bold text-success">${{ "%.2f"|format(site_stats[site.id].total_value) }}</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('site_detail', site_id=site.id) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                            <a href="{{ url_for('site_inventory', site_id=site.id) }}" 
+                                               class="btn btn-secondary btn-sm">
+                                                <i class="fas fa-boxes me-1"></i>Inventory
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Site Statistics -->
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-arrow-up text-success me-2"></i>
+                                            <div>
+                                                <small class="text-muted">This Month Received</small>
+                                                <div class="fw-bold">{{ site_stats[site.id].monthly_received }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-arrow-down text-warning me-2"></i>
+                                            <div>
+                                                <small class="text-muted">This Month Issued</small>
+                                                <div class="fw-bold">{{ site_stats[site.id].monthly_issued }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                            <div>
+                                                <small class="text-muted">Low Stock Items</small>
+                                                <div class="fw-bold">{{ site_stats[site.id].low_stock_items }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Assigned Storesman -->
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <small class="text-muted">Assigned Storesman:</small>
+                                        {% if site.assigned_storesman %}
+                                            <span class="badge bg-info ms-2">{{ site.assigned_storesman.username }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">Not Assigned</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                            <h5>No sites configured</h5>
+                            <p class="text-muted">Contact administrator to set up construction sites</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>System Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ total_sites }}</div>
+                                <small class="text-muted">Total Sites</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ total_materials }}</div>
+                                <small class="text-muted">Material Types</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-info">{{ total_transactions }}</div>
+                                <small class="text-muted">Total Transactions</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ pending_requests }}</div>
+                                <small class="text-muted">Pending Requests</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Recent Activity</h6>
+                    {% if recent_transactions %}
+                        <div class="list-group list-group-flush">
+                            {% for transaction in recent_transactions[:5] %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <small class="fw-bold">{{ transaction.serial_number }}</small>
+                                        <div class="small text-muted">{{ transaction.site.name }}</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ transaction.created_at.strftime('%m/%d') }}</small>
+                                        <div class="small">
+                                            {% if transaction.type == 'receive' %}
+                                                <span class="badge bg-success">+{{ "%.1f"|format(transaction.quantity) }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">-{{ "%.1f"|format(transaction.quantity) }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                            <p class="text-muted small">No recent activity</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% if system_alerts %}
+                        {% for alert in system_alerts %}
+                        <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ alert.icon }} me-2"></i>
+                            <strong>{{ alert.title }}</strong> {{ alert.message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="text-muted small">No system alerts</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh page every 30 seconds to update stats
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}
