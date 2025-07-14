@@ -289,19 +289,9 @@ class InventoryService:
         """
         Get transaction history with optional filters
         """
-        query = db.session.query(
-            Transaction.serial_number,
-            Transaction.created_at,
-            Site.name.label('site_name'),
-            Material.name.label('material_name'),
-            Material.unit,
-            Transaction.quantity,
-            Transaction.unit_cost,
-            Transaction.total_value,
-            Transaction.type,
-            Transaction.issued_to_project_code,
-            Transaction.notes
-        ).join(Site).join(Material)
+        from models_new import Transaction, Site, Material, User
+        
+        query = db.session.query(Transaction).join(Site).join(Material)
         
         if site_id:
             query = query.filter(Transaction.site_id == site_id)
@@ -312,7 +302,20 @@ class InventoryService:
         if end_date:
             query = query.filter(Transaction.created_at <= end_date)
         
-        return query.order_by(Transaction.created_at.desc()).all()
+        transactions = query.order_by(Transaction.created_at.desc()).all()
+        
+        # Add computed fields for template compatibility
+        for txn in transactions:
+            txn.site_name = txn.site.name
+            txn.material_name = txn.material.name
+            txn.unit = txn.material.unit
+            # Handle creator user relationship
+            if txn.created_by:
+                txn.creator = txn.creator_user
+            else:
+                txn.creator = None
+        
+        return transactions
     
     @staticmethod
     def process_issue_request(request_id, approved_by, action='approve', review_notes=None):

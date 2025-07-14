@@ -104,8 +104,8 @@ class Transaction(db.Model):
     supporting_document_url = db.Column(db.String(500), nullable=True)
     
     # Relationships
-    creator = db.relationship('User', foreign_keys=[created_by], backref='created_transactions')
-    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_transactions')
+    creator_user = db.relationship('User', foreign_keys=[created_by], backref='created_transactions')
+    approver_user = db.relationship('User', foreign_keys=[approved_by], backref='approved_transactions')
 
     @staticmethod
     def generate_serial_number():
