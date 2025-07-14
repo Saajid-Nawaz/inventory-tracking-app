@@ -307,9 +307,13 @@ class InventoryService:
             if material_id:
                 query = query.filter(Transaction.material_id == material_id)
             if start_date:
-                query = query.filter(Transaction.created_at >= start_date)
+                # Convert date to datetime for proper comparison
+                start_datetime = datetime.combine(start_date, datetime.min.time())
+                query = query.filter(Transaction.created_at >= start_datetime)
             if end_date:
-                query = query.filter(Transaction.created_at <= end_date)
+                # Convert date to datetime for proper comparison
+                end_datetime = datetime.combine(end_date, datetime.max.time())
+                query = query.filter(Transaction.created_at <= end_datetime)
             
             transactions = query.order_by(Transaction.created_at.desc()).all()
             
