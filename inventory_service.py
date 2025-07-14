@@ -292,7 +292,7 @@ class InventoryService:
         """
         from models_new import Transaction, Site, Material, User
         
-        query = db.session.query(Transaction).join(Site).join(Material)
+        query = db.session.query(Transaction).join(Site).join(Material).join(User, Transaction.created_by == User.id)
         
         if site_id:
             query = query.filter(Transaction.site_id == site_id)
@@ -310,11 +310,6 @@ class InventoryService:
             txn.site_name = txn.site.name
             txn.material_name = txn.material.name
             txn.unit = txn.material.unit
-            # Handle creator user relationship
-            if txn.created_by:
-                txn.creator = txn.creator_user
-            else:
-                txn.creator = None
         
         return transactions
     
