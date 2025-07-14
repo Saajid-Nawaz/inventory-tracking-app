@@ -361,6 +361,56 @@ def edit_material():
     return redirect(url_for('material_management'))
 
 
+@app.route('/delete_material', methods=['POST'])
+@login_required
+def delete_material():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    material_id = request.form.get('material_id')
+    material = Material.query.get_or_404(material_id)
+    
+    try:
+        # Check if material has any stock levels with quantity > 0
+        stock_levels = StockLevel.query.filter_by(material_id=material_id).all()
+        has_stock = any(stock.quantity > 0 for stock in stock_levels)
+        
+        if has_stock:
+            flash(f'Cannot delete material "{material.name}" - it has active stock at one or more sites', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Check if material has any transactions
+        transactions = Transaction.query.filter_by(material_id=material_id).first()
+        if transactions:
+            flash(f'Cannot delete material "{material.name}" - it has transaction history', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Check if material has any pending requests
+        pending_requests = IssueRequest.query.filter_by(material_id=material_id, status='pending').first()
+        if pending_requests:
+            flash(f'Cannot delete material "{material.name}" - it has pending issue requests', 'error')
+            return redirect(url_for('manage_materials'))
+        
+        # Safe to delete - remove any zero-quantity stock levels first
+        for stock in stock_levels:
+            if stock.quantity == 0:
+                db.session.delete(stock)
+        
+        # Delete the material
+        db.session.delete(material)
+        db.session.commit()
+        
+        flash(f'Material "{material.name}" deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting material: {str(e)}")
+        flash('Error deleting material', 'error')
+    
+    return redirect(url_for('manage_materials'))
+
+
 @app.route('/manage_sites')
 @login_required
 def manage_sites():

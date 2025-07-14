@@ -164,6 +164,15 @@ The application follows a traditional three-tier architecture:
   - Includes detailed specifications for rebar sizes, electrical components, plumbing fixtures, safety equipment, and finishing materials
   - All materials have standardized units (tonnes, EA, meters, pieces, bags, etc.), cost data, and minimum stock levels
   - Removed duplicate entries and standardized naming conventions for consistency
+- **Material Management Enhancements**: Added comprehensive material deletion functionality:
+  - Safety-first deletion process with multiple validation checks
+  - Prevents deletion of materials with active stock levels (quantity > 0)
+  - Prevents deletion of materials with transaction history
+  - Prevents deletion of materials with pending issue requests
+  - Automatic cleanup of zero-quantity stock levels before deletion
+  - User-friendly confirmation dialog with clear warnings
+  - Proper error handling and informative feedback messages
+  - Integrated delete button in material management interface with trash icon
 
 ### Technical Enhancements
 1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations
