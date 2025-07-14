@@ -76,21 +76,31 @@
 
                         <div class="mb-3">
                             <label class="form-label">Materials to Transfer</label>
+                            <div class="row mb-2">
+                                <div class="col-md-6"><small class="text-muted">Material</small></div>
+                                <div class="col-md-2"><small class="text-muted">Quantity</small></div>
+                                <div class="col-md-2"><small class="text-muted">Unit</small></div>
+                                <div class="col-md-2"><small class="text-muted">Action</small></div>
+                            </div>
                             <div id="materials-container">
                                 <div class="row mb-2 material-row">
-                                    <div class="col-md-8">
-                                        <select name="materials[0][material_id]" class="form-select" required>
+                                    <div class="col-md-6">
+                                        <select name="materials[0][material_id]" class="form-select material-select" required onchange="updateUnit(this, 0)">
                                             <option value="">Select material...</option>
                                             {% for material in materials %}
-                                                <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
+                                                <option value="{{ material.id }}" data-unit="{{ material.unit }}">{{ material.name }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <input type="number" name="materials[0][quantity]" class="form-control" 
-                                               placeholder="Quantity" min="0.01" step="0.01" required>
+                                               placeholder="0.00" min="0.01" step="0.01" required>
                                     </div>
-                                    <div class="col-md-1">
+                                    <div class="col-md-2">
+                                        <input type="text" class="form-control unit-display" id="unit-display-0" 
+                                               placeholder="Unit" readonly>
+                                    </div>
+                                    <div class="col-md-2">
                                         <button type="button" class="btn btn-danger btn-sm remove-material" 
                                                 onclick="removeMaterial(this)" style="display: none;">
                                             <i class="fas fa-minus"></i>
@@ -127,24 +137,39 @@
 <script>
 let materialCount = 1;
 
+// Build materials array from server-side data
+const materials = [
+    {% for material in materials %}
+        {id: {{ material.id }}, name: "{{ material.name }}", unit: "{{ material.unit }}"},
+    {% endfor %}
+];
+
 function addMaterial() {
     const container = document.getElementById('materials-container');
     const newRow = document.createElement('div');
     newRow.className = 'row mb-2 material-row';
+    
+    // Build material options
+    let materialOptions = '<option value="">Select material...</option>';
+    materials.forEach(material => {
+        materialOptions += `<option value="${material.id}" data-unit="${material.unit}">${material.name}</option>`;
+    });
+    
     newRow.innerHTML = `
-        <div class="col-md-8">
-            <select name="materials[${materialCount}][material_id]" class="form-select" required>
-                <option value="">Select material...</option>
-                {% for material in materials %}
-                    <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
-                {% endfor %}
+        <div class="col-md-6">
+            <select name="materials[${materialCount}][material_id]" class="form-select material-select" required onchange="updateUnit(this, ${materialCount})">
+                ${materialOptions}
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <input type="number" name="materials[${materialCount}][quantity]" class="form-control" 
-                   placeholder="Quantity" min="0.01" step="0.01" required>
+                   placeholder="0.00" min="0.01" step="0.01" required>
         </div>
-        <div class="col-md-1">
+        <div class="col-md-2">
+            <input type="text" class="form-control unit-display" id="unit-display-${materialCount}" 
+                   placeholder="Unit" readonly>
+        </div>
+        <div class="col-md-2">
             <button type="button" class="btn btn-danger btn-sm remove-material" 
                     onclick="removeMaterial(this)">
                 <i class="fas fa-minus"></i>
@@ -156,6 +181,18 @@ function addMaterial() {
     
     // Show remove buttons for all rows except the first one
     updateRemoveButtons();
+}
+
+function updateUnit(selectElement, index) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const unitDisplay = document.getElementById(`unit-display-${index}`);
+    
+    if (selectedOption.value) {
+        const unit = selectedOption.getAttribute('data-unit');
+        unitDisplay.value = unit;
+    } else {
+        unitDisplay.value = '';
+    }
 }
 
 function removeMaterial(button) {
