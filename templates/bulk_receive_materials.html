@@ -133,55 +133,77 @@
 
 {% block scripts %}
 <script>
-$(document).ready(function() {
-    // Store materials data for dynamic row creation
-    var materials = [
-        {% for material in materials %}
-        {
-            id: {{ material.id }},
-            name: "{{ material.name }}",
-            unit: "{{ material.unit }}"
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
+// Wait for jQuery to load
+function waitForJQuery() {
+    if (typeof $ !== 'undefined') {
+        initializeBulkReceive();
+    } else {
+        setTimeout(waitForJQuery, 100);
+    }
+}
 
-    // Add new row
-    $('#addRowBtn').click(function() {
-        var materialOptions = '<option value="">Select Material...</option>';
-        materials.forEach(function(material) {
-            materialOptions += '<option value="' + material.id + '" data-unit="' + material.unit + '">' + 
-                              material.name + ' (' + material.unit + ')</option>';
-        });
+function initializeBulkReceive() {
+    $(document).ready(function() {
+        // Get the first row's select element to clone options
+        var firstRowSelect = $('#materialsTable tbody tr:first-child select');
         
-        var newRow = `
-            <tr>
-                <td>
-                    <select class="form-select" name="material_id[]" required>
-                        ${materialOptions}
-                    </select>
-                </td>
-                <td>
-                    <input type="number" class="form-control quantity-input" 
-                           name="quantity[]" step="0.01" min="0.01" required>
-                </td>
-                <td>
-                    <input type="number" class="form-control unit-cost-input" 
-                           name="unit_cost[]" step="0.01" min="0.01" required>
-                </td>
-                <td>
-                    <input type="number" class="form-control total-value" 
-                           name="total_value[]" step="0.01" readonly>
-                </td>
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm remove-row">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        $('#materialsTable tbody').append(newRow);
+        // Add new row
+        $('#addRowBtn').click(function() {
+            // Clone the first row
+            var newRow = $('#materialsTable tbody tr:first-child').clone();
+            
+            // Clear the values in the new row
+            newRow.find('input').val('');
+            newRow.find('select').val('');
+            
+            // Add the new row to the table
+            $('#materialsTable tbody').append(newRow);
+            updateTotalItems();
+        });
+
+        // Remove row
+        $(document).on('click', '.remove-row', function() {
+            if ($('#materialsTable tbody tr').length > 1) {
+                $(this).closest('tr').remove();
+                updateTotalItems();
+                updateGrandTotal();
+            } else {
+                alert('At least one material item is required.');
+            }
+        });
+
+        // Calculate total value when quantity or unit cost changes
+        $(document).on('input', '.quantity-input, .unit-cost-input', function() {
+            var row = $(this).closest('tr');
+            var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
+            var unitCost = parseFloat(row.find('.unit-cost-input').val()) || 0;
+            var totalValue = quantity * unitCost;
+            
+            row.find('.total-value').val(totalValue.toFixed(2));
+            updateGrandTotal();
+        });
+
+        function updateTotalItems() {
+            var totalItems = $('#materialsTable tbody tr').length;
+            $('#totalItems').text(totalItems);
+        }
+
+        function updateGrandTotal() {
+            var grandTotal = 0;
+            $('.total-value').each(function() {
+                grandTotal += parseFloat($(this).val()) || 0;
+            });
+            $('#grandTotal').text(grandTotal.toFixed(2));
+        }
+
+        // Initialize totals
         updateTotalItems();
+        updateGrandTotal();
     });
+}
+
+// Start the initialization
+waitForJQuery();
 
     // Remove row
     $(document).on('click', '.remove-row', function() {
