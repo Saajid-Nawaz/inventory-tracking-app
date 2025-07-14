@@ -38,7 +38,7 @@ class Site(db.Model):
     
     # Relationships
     stock_levels = db.relationship('StockLevel', backref='site', cascade='all, delete-orphan')
-    transactions = db.relationship('Transaction', backref='site', cascade='all, delete-orphan')
+    # transactions relationship is defined on Transaction side
 
     def __repr__(self):
         return f'<Site {self.name}>'
@@ -56,7 +56,7 @@ class Material(db.Model):
     
     # Relationships
     stock_levels = db.relationship('StockLevel', backref='material', cascade='all, delete-orphan')
-    transactions = db.relationship('Transaction', backref='material', cascade='all, delete-orphan')
+    # transactions relationship is defined on Transaction side
 
     def __repr__(self):
         return f'<Material {self.name}>'
@@ -104,8 +104,8 @@ class Transaction(db.Model):
     supporting_document_url = db.Column(db.String(500), nullable=True)
     
     # Relationships
-    site = db.relationship('Site', backref='site_transactions')
-    material = db.relationship('Material', backref='material_transactions')
+    site = db.relationship('Site')
+    material = db.relationship('Material')
     creator_user = db.relationship('User', foreign_keys=[created_by], backref='created_transactions')
     approver_user = db.relationship('User', foreign_keys=[approved_by], backref='approved_transactions')
 
