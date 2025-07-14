@@ -699,6 +699,51 @@ def view_document(filename):
         flash('Error accessing document', 'error')
         return redirect(url_for('storesman_dashboard'))
 
+@app.route('/download_document/<path:filename>')
+@login_required
+def download_document(filename):
+    """Download uploaded supporting documents"""
+    try:
+        file_path = os.path.join('uploads', filename)
+        if os.path.exists(file_path):
+            return send_file(file_path, as_attachment=True)
+        else:
+            flash('Document not found', 'error')
+            return redirect(url_for('storesman_dashboard'))
+    except Exception as e:
+        logging.error(f"Error downloading document: {str(e)}")
+        flash('Error downloading document', 'error')
+        return redirect(url_for('storesman_dashboard'))
+
+@app.route('/transaction_documents/<int:transaction_id>')
+@login_required
+def transaction_documents(transaction_id):
+    """View documents for a specific transaction"""
+    try:
+        transaction = Transaction.query.get_or_404(transaction_id)
+        
+        # Check access permissions
+        if current_user.role == 'storesman' and transaction.site_id != current_user.assigned_site_id:
+            flash('Access denied', 'error')
+            return redirect(url_for('storesman_dashboard'))
+        
+        documents = []
+        if transaction.supporting_document_url:
+            filename = os.path.basename(transaction.supporting_document_url)
+            documents.append({
+                'filename': filename,
+                'path': transaction.supporting_document_url,
+                'exists': os.path.exists(transaction.supporting_document_url)
+            })
+        
+        return render_template('transaction_documents.html', 
+                             transaction=transaction, 
+                             documents=documents)
+    except Exception as e:
+        logging.error(f"Error viewing transaction documents: {str(e)}")
+        flash('Error accessing transaction documents', 'error')
+        return redirect(url_for('storesman_dashboard'))
+
 
 @app.route('/process_receive_material', methods=['POST'])
 @login_required

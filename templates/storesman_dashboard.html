@@ -221,6 +221,7 @@
                                     <th>Quantity</th>
                                     <th>Type</th>
                                     <th>Value</th>
+                                    <th>Documents</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -247,6 +248,17 @@
                                         {% endif %}
                                     </td>
                                     <td>${{ "%.2f"|format(txn.total_value|abs) }}</td>
+                                    <td>
+                                        {% if txn.supporting_document_url %}
+                                            <a href="{{ url_for('transaction_documents', transaction_id=txn.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="View supporting documents">
+                                                <i class="fas fa-file-alt"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
