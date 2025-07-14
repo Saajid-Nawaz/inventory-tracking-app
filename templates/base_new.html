@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Multi-Site Inventory Management System{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--accent-color), #5dade2);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), #5dade2);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, var(--accent-color));
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #f1c40f);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #ec7063);
+            border: none;
+            border-radius: 8px;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .alert-success {
+            border-left-color: var(--success-color);
+            background-color: rgba(39, 174, 96, 0.1);
+        }
+        
+        .alert-warning {
+            border-left-color: var(--warning-color);
+            background-color: rgba(243, 156, 18, 0.1);
+        }
+        
+        .alert-danger {
+            border-left-color: var(--danger-color);
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .alert-info {
+            border-left-color: var(--accent-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            font-weight: 500;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .badge {
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+        }
+        
+        .stats-card .card-body {
+            padding: 2rem;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .low-stock {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 1rem 1.5rem;
+            margin: 0.25rem 0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .stats-number {
+                font-size: 2rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-warehouse me-2"></i>
+                Inventory Management
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.role == 'site_engineer' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('site_engineer_dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_stock') }}">
+                                <i class="fas fa-boxes me-1"></i>Stock Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('approve_requests') }}">
+                                <i class="fas fa-check-circle me-1"></i>Approvals
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('manage_users') }}">
+                                <i class="fas fa-users me-1"></i>Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('manage_materials') }}">
+                                <i class="fas fa-cogs me-1"></i>Materials
+                            </a>
+                        </li>
+                    {% elif current_user.role == 'storesman' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('storesman_dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('receive_materials') }}">
+                                <i class="fas fa-plus-circle me-1"></i>Receive
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('request_materials') }}">
+                                <i class="fas fa-hand-paper me-1"></i>Request
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('batch_request') }}">
+                                <i class="fas fa-layer-group me-1"></i>Batch Request
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('stock_adjustments') }}">
+                                <i class="fas fa-balance-scale me-1"></i>Adjustments
+                            </a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reports') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Reports
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ current_user.username }}
+                            <span class="badge bg-light text-dark ms-1">{{ current_user.role.replace('_', ' ').title() }}</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if current_user.assigned_site %}
+                            <li><span class="dropdown-item-text">
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ current_user.assigned_site.name }}
+                            </span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif category == 'error' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+        
+        // Confirm delete actions
+        function confirmDelete(message) {
+            return confirm(message || 'Are you sure you want to delete this item?');
+        }
+        
+        // Format numbers with commas
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Format currency
+        function formatCurrency(amount) {
+            return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Real-time search functionality
+        function setupTableSearch(tableId, searchInputId) {
+            const table = document.getElementById(tableId);
+            const searchInput = document.getElementById(searchInputId);
+            
+            if (table && searchInput) {
+                searchInput.addEventListener('keyup', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+                    
+                    Array.from(rows).forEach(function(row) {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                });
+            }
+        }
+        
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

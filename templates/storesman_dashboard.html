@@ -1,0 +1,338 @@
+{% extends "base_new.html" %}
+
+{% block title %}Storesman Dashboard - {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-warehouse me-2"></i>Storesman Dashboard</h1>
+                <div class="text-muted">
+                    <i class="fas fa-map-marker-alt me-1"></i>{{ site.name }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-boxes fa-2x mb-3"></i>
+                    <div class="stats-number">{{ stock_summary|length }}</div>
+                    <div>Materials in Stock</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <div class="stats-number">{{ low_stock_items|length }}</div>
+                    <div>Low Stock Items</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-3"></i>
+                    <div class="stats-number">{{ pending_individual + pending_batch }}</div>
+                    <div>Pending Requests</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-exchange-alt fa-2x mb-3"></i>
+                    <div class="stats-number">{{ recent_transactions|length }}</div>
+                    <div>Recent Transactions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('receive_materials') }}" class="btn btn-success w-100">
+                                <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                                <span>Receive Materials</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('request_materials') }}" class="btn btn-warning w-100">
+                                <i class="fas fa-hand-paper fa-2x d-block mb-2"></i>
+                                <span>Request Materials</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('batch_request') }}" class="btn btn-info w-100">
+                                <i class="fas fa-layer-group fa-2x d-block mb-2"></i>
+                                <span>Batch Request</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('stock_adjustments') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-balance-scale fa-2x d-block mb-2"></i>
+                                <span>Stock Adjustments</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    {% if low_stock_items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Current Stock</th>
+                                    <th>Minimum Level</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr class="low-stock">
+                                    <td>{{ item.material_name }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            {{ "%.2f"|format(item.quantity) }} {{ item.unit }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(item.minimum_level) }} {{ item.unit }}</td>
+                                    <td>
+                                        <a href="{{ url_for('receive_materials') }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-plus me-1"></i>Receive Stock
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Current Stock Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-boxes me-2"></i>Current Stock Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% if stock_summary %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Unit</th>
+                                    <th>Quantity</th>
+                                    <th>Value</th>
+                                    <th>Avg Cost</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in stock_summary %}
+                                <tr {% if item.quantity < item.minimum_level %}class="low-stock"{% endif %}>
+                                    <td>{{ item.material_name }}</td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ "%.2f"|format(item.quantity) }}</td>
+                                    <td>${{ "%.2f"|format(item.total_value) }}</td>
+                                    <td>${{ "%.2f"|format(item.total_value / item.quantity if item.quantity > 0 else 0) }}</td>
+                                    <td>
+                                        {% if item.quantity < item.minimum_level %}
+                                            <span class="badge bg-danger">Low Stock</span>
+                                        {% else %}
+                                            <span class="badge bg-success">OK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                        <h4>No Stock Data</h4>
+                        <p class="text-muted">Start by receiving materials into inventory.</p>
+                        <a href="{{ url_for('receive_materials') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Receive Materials
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Transactions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Serial</th>
+                                    <th>Date</th>
+                                    <th>Material</th>
+                                    <th>Quantity</th>
+                                    <th>Type</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for txn in recent_transactions %}
+                                <tr>
+                                    <td><code>{{ txn.serial_number }}</code></td>
+                                    <td>{{ txn.created_at.strftime('%m/%d %H:%M') }}</td>
+                                    <td>{{ txn.material_name }}</td>
+                                    <td>
+                                        {% if txn.quantity < 0 %}
+                                            <span class="text-danger">{{ "%.2f"|format(txn.quantity) }}</span>
+                                        {% else %}
+                                            <span class="text-success">+{{ "%.2f"|format(txn.quantity) }}</span>
+                                        {% endif %}
+                                        {{ txn.unit }}
+                                    </td>
+                                    <td>
+                                        {% if txn.type == 'receive' %}
+                                            <span class="badge bg-success">Receive</span>
+                                        {% elif txn.type == 'issue' %}
+                                            <span class="badge bg-warning">Issue</span>
+                                        {% else %}
+                                            <span class="badge bg-info">Adjustment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>${{ "%.2f"|format(txn.total_value|abs) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('reports') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-chart-bar me-1"></i>View Full Report
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h4>No Recent Transactions</h4>
+                        <p class="text-muted">Transaction history will appear here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Reports & Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                <h6>Daily Issues Report</h6>
+                                <p class="text-muted">Generate PDF report of today's material issues</p>
+                                <a href="{{ url_for('generate_daily_report', site_id=site.id, report_date=now.strftime('%Y-%m-%d')) }}" class="btn btn-danger">
+                                    <i class="fas fa-download me-1"></i>Download PDF
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                                <h6>Stock Summary</h6>
+                                <p class="text-muted">Export current stock levels to Excel</p>
+                                <a href="{{ url_for('generate_stock_report', site_id=site.id, format='excel') }}" class="btn btn-success">
+                                    <i class="fas fa-download me-1"></i>Download Excel
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                                <h6>Custom Reports</h6>
+                                <p class="text-muted">Generate custom reports with filters</p>
+                                <a href="{{ url_for('reports') }}" class="btn btn-info">
+                                    <i class="fas fa-cog me-1"></i>Custom Reports
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+    
+    // Highlight low stock items
+    document.addEventListener('DOMContentLoaded', function() {
+        const lowStockRows = document.querySelectorAll('.low-stock');
+        lowStockRows.forEach(function(row) {
+            row.style.animation = 'pulse 2s infinite';
+        });
+    });
+    
+    // Add pulse animation for low stock items
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { background-color: rgba(220, 53, 69, 0.1); }
+            50% { background-color: rgba(220, 53, 69, 0.2); }
+            100% { background-color: rgba(220, 53, 69, 0.1); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

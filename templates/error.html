@@ -1,0 +1,29 @@
+{% extends "base_new.html" %}
+
+{% block title %}Error {{ error_code }} - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center">
+                <div class="error-template">
+                    <h1 class="display-1 text-primary">{{ error_code }}</h1>
+                    <h2 class="mb-4">Oops! Something went wrong</h2>
+                    <div class="error-details">
+                        <p class="lead">{{ error_message }}</p>
+                    </div>
+                    <div class="error-actions">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-home me-2"></i>Go Home
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-secondary btn-lg ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Go Back
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

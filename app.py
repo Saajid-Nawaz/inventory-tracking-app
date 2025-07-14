@@ -38,6 +38,6 @@ db = SQLAlchemy(app, model_class=Base)
 
 # Create tables
 with app.app_context():
-    import models  # noqa: F401
+    import models_new  # noqa: F401
     db.create_all()
     logging.info("Database tables created")
