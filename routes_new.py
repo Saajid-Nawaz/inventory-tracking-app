@@ -611,7 +611,14 @@ def upload_materials_excel():
                 unit = str(row['Unit']).strip()
                 
                 # Validate unit
-                valid_units = ['kg', 'bags', 'tons', 'm3', 'm2', 'm', 'pcs', 'liters']
+                valid_units = [
+                    'kg', 'bags', 'tons', 'tonnes', 'tonner', 'tonne',
+                    'm3', 'm2', 'm', 'meters', 'metres', 
+                    'pcs', 'pieces', 'ea', 'each', 'no',
+                    'liters', 'litres', 'l',
+                    'cubic meters', 'cubic metres',
+                    'square meters', 'square metres'
+                ]
                 if unit.lower() not in valid_units:
                     logging.warning(f"Invalid unit '{unit}' for material '{material_name}'. Skipping.")
                     error_count += 1
@@ -654,12 +661,17 @@ def upload_materials_excel():
         # Commit all changes
         db.session.commit()
         
-        # Show success message
-        success_msg = f"Excel upload completed! Added: {added_count}, Updated: {updated_count}"
-        if error_count > 0:
-            success_msg += f", Errors: {error_count}"
-        
-        flash(success_msg, 'success')
+        # Show detailed success message
+        if added_count > 0 or updated_count > 0:
+            success_msg = f"Excel upload completed! Added: {added_count}, Updated: {updated_count}"
+            if error_count > 0:
+                success_msg += f", Errors: {error_count}"
+            flash(success_msg, 'success')
+        else:
+            if error_count > 0:
+                flash(f"Upload failed: {error_count} materials skipped due to invalid units or other errors. Check the logs for details.", 'error')
+            else:
+                flash("No materials were imported. Check your Excel file format.", 'warning')
         
     except Exception as e:
         db.session.rollback()

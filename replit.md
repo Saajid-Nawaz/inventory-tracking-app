@@ -147,6 +147,11 @@ The application follows a traditional three-tier architecture:
 - **Authentication System**: Confirmed login/logout functionality for both Site Engineers and Storesmen
 - **Template System**: All critical pages (receive_materials, request_materials, approve_requests) fully functional
 - **API Endpoints**: Materials API (8 items), Sites API (3 items), and pending counts API all operational
+- **Excel Upload Fix**: Expanded valid units list to include common construction materials units:
+  - Added: tonnes, tonner, tonne, EA, each, pieces, meters, metres, litres, cubic meters, square meters
+  - Fixed unit validation that was preventing materials with units like 'tonnes', 'tonner', 'EA' from being imported
+  - Enhanced error reporting to provide detailed feedback on upload success/failure
+  - All previously rejected materials should now import successfully
 
 ### Technical Enhancements
 1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations
