@@ -1458,6 +1458,8 @@ def generate_transaction_history_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
+    logging.info(f"Transaction history report requested for site_id={site_id}, start_date={start_date}, end_date={end_date}")
+    
     if not site_id:
         flash('Site selection is required', 'error')
         return redirect(url_for('reports'))
@@ -1481,6 +1483,12 @@ def generate_transaction_history_report():
         transactions_data = ReportService.generate_transaction_history_report(
             site_id, start_date_obj, end_date_obj
         )
+        
+        # Debug logging
+        logging.info(f"Transaction data for site {site_id}: {len(transactions_data)} transactions")
+        if transactions_data:
+            for i, txn in enumerate(transactions_data[:3]):  # Log first 3 transactions
+                logging.info(f"Transaction {i+1}: {txn.serial_number} - {txn.type} - {txn.quantity}")
         
         # Generate PDF report
         pdf_data = PDFReportGenerator.generate_transaction_history_report(
@@ -1720,6 +1728,34 @@ def api_materials():
     
     return jsonify(data)
 
+
+@app.route('/api/test_transactions/<int:site_id>')
+@login_required
+def test_transactions(site_id):
+    """Test endpoint to debug transaction history"""
+    try:
+        from inventory_service import InventoryService
+        transactions = InventoryService.get_transaction_history(site_id=site_id)
+        
+        data = []
+        for txn in transactions:
+            data.append({
+                'id': txn.id,
+                'serial_number': txn.serial_number,
+                'type': txn.type,
+                'quantity': txn.quantity,
+                'site_name': txn.site_name if hasattr(txn, 'site_name') else 'Unknown',
+                'material_name': txn.material_name if hasattr(txn, 'material_name') else 'Unknown',
+                'created_at': txn.created_at.isoformat(),
+                'creator': txn.creator_user.username if txn.creator_user else 'Unknown'
+            })
+        
+        return jsonify({
+            'count': len(data),
+            'transactions': data[:5]  # Return first 5 for testing
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/pending_counts')
 @login_required

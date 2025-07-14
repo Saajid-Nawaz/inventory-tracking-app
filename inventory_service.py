@@ -292,26 +292,39 @@ class InventoryService:
         """
         from models_new import Transaction, Site, Material, User
         
-        query = db.session.query(Transaction).join(Site).join(Material).join(User, Transaction.created_by == User.id)
-        
-        if site_id:
-            query = query.filter(Transaction.site_id == site_id)
-        if material_id:
-            query = query.filter(Transaction.material_id == material_id)
-        if start_date:
-            query = query.filter(Transaction.created_at >= start_date)
-        if end_date:
-            query = query.filter(Transaction.created_at <= end_date)
-        
-        transactions = query.order_by(Transaction.created_at.desc()).all()
-        
-        # Add computed fields for template compatibility
-        for txn in transactions:
-            txn.site_name = txn.site.name
-            txn.material_name = txn.material.name
-            txn.unit = txn.material.unit
-        
-        return transactions
+        try:
+            # Start with basic query
+            query = db.session.query(Transaction)
+            
+            # Add joins with left outer joins to handle missing relationships
+            query = query.join(Site, Transaction.site_id == Site.id)
+            query = query.join(Material, Transaction.material_id == Material.id)
+            query = query.outerjoin(User, Transaction.created_by == User.id)
+            
+            # Apply filters
+            if site_id:
+                query = query.filter(Transaction.site_id == site_id)
+            if material_id:
+                query = query.filter(Transaction.material_id == material_id)
+            if start_date:
+                query = query.filter(Transaction.created_at >= start_date)
+            if end_date:
+                query = query.filter(Transaction.created_at <= end_date)
+            
+            transactions = query.order_by(Transaction.created_at.desc()).all()
+            
+            # Add computed fields for template compatibility
+            for txn in transactions:
+                txn.site_name = txn.site.name if txn.site else 'Unknown Site'
+                txn.material_name = txn.material.name if txn.material else 'Unknown Material'
+                txn.unit = txn.material.unit if txn.material else 'Unknown'
+            
+            logging.info(f"Retrieved {len(transactions)} transactions for site_id={site_id}")
+            return transactions
+            
+        except Exception as e:
+            logging.error(f"Error retrieving transaction history: {str(e)}")
+            return []
     
     @staticmethod
     def process_issue_request(request_id, approved_by, action='approve', review_notes=None):
