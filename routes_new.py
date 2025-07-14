@@ -451,6 +451,7 @@ def system_settings():
     # Get system statistics
     total_transactions = Transaction.query.count()
     active_users = User.query.count()
+    active_sites = Site.query.count()  # All sites are considered active since we don't have is_active column
     today_transactions = Transaction.query.filter(
         Transaction.created_at >= datetime.now().date()
     ).count()
@@ -465,6 +466,7 @@ def system_settings():
                          sites=sites,
                          total_transactions=total_transactions,
                          active_users=active_users,
+                         active_sites=active_sites,
                          today_transactions=today_transactions,
                          pending_approvals=pending_approvals,
                          low_stock_items=low_stock_items,
