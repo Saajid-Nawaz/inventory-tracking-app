@@ -1,0 +1,119 @@
+📋 Build an Inventory Tracking & Approval App (MVP) — Web and Mobile Ready
+
+Build a role-based inventory tracking and material issuing application for a construction/site environment.  
+It should run as a web app (responsive/mobile-friendly) and be structured cleanly so it can later be packaged as a phone app.  
+
+---
+
+🎯 **Overview:**
+The app tracks materials at multiple construction sites.  
+There are two user roles:  
+- Storesman: manages stock at their assigned site.  
+- Site Engineer: oversees one or more sites, approves requests, manages Storesmen, and sees material cost data.
+
+All material movements must be logged with a unique transaction ID and timestamp. Reports must be exportable as PDF or Excel. Images of supporting documents (like invoices or GRVs) should also be stored and linked to each transaction.
+
+---
+
+👤 **User Roles & Permissions:**
+
+**Storesman:**
+- Receive materials into stock at their assigned site.
+  - Must be able to *bulk receive* multiple materials in a single transaction (e.g., enter a list of items at once).
+  - Capture and upload an image of the physical invoice and/or Goods Received Voucher (GRV) to support each receipt transaction; store the image in the system linked to the transaction.
+- Submit a request to issue materials out of stock (requires Site Engineer approval).
+- Submit batch issue requests for multiple materials.
+- Generate and download PDF reports of all material issues (daily), with unique serial numbers per transaction.
+- View current stock at their site and compare to total materials received.
+- Cannot see material cost or value — cost fields are hidden from Storesman view.
+
+**Site Engineer:**
+- Add/edit Storesmen and assign each to a specific site.
+  - Once assigned, Storesmen are locked to their assigned site and can only manage stock for that site.
+- View stock at each site, including cost and total value.
+- Approve or reject material issue requests (single and batch).
+- View total available stock per site and export stock summary as PDF or Excel.
+- Monitor stock levels against predefined minimum/reorder thresholds and get notified if below.
+
+---
+
+📦 **Inventory Features:**
+- Track stock by site, material name/ID, quantity, unit cost, and total value.
+- Use FIFO as default valuation (extensible to weighted average later).
+- Allow setting minimum/reorder levels per material per site.
+- Periodic stock counts and adjustments, with discrepancies logged.
+- Full transaction history for each material at each site.
+- Optionally link each issue transaction to a job/project code.
+- Store uploaded images of invoices/GRVs as part of the transaction record, accessible from transaction history and reports.
+
+---
+
+📊 **Reporting & Export:**
+- Daily issued materials report (PDF) per site, with unique transaction serials.
+- Stock summary report (PDF/Excel) per site.
+- Full material transaction history view/downloadable, with links to uploaded supporting documents.
+
+---
+
+🖥️ **Technical Notes:**
+- Responsive UI (web and mobile-friendly) using modern web framework (React preferred or plain HTML/CSS/JS).
+- Backend database: Use a database that supports file storage (e.g., Firebase with Firestore + Storage, or SQL DB with blob storage, or S3-style object storage).
+- Code structure: Modular, MVC-friendly, scalable.
+- Authentication: username/password with role-based access (Storesman/Site Engineer).
+- Generate unique transaction IDs (sequential or UUID).
+- Dashboard with analytics for Site Engineer is a nice-to-have.
+
+---
+
+🗄️ **Database Schema:**
+
+**Tables/Collections:**
+- `users` (id, username, password_hash, role [storesman/site_engineer], assigned_site_id)
+- `sites` (id, name, location)
+- `materials` (id, name, unit, description, cost_per_unit, minimum_level)
+- `stock_levels` (id, site_id, material_id, quantity, updated_at)
+- `transactions` (id, site_id, material_id, quantity, type [receive/issue/adjustment], issued_to_project_code, approved_by, created_by, created_at, serial_number, supporting_document_url)
+
+Uploaded supporting documents (invoices/GRVs) should be stored and linked to each transaction’s `supporting_document_url`.
+
+---
+
+🌐 **Suggested API Endpoints:**
+
+**Auth**
+- `POST /login` — authenticate user
+
+**Users & Sites**
+- `GET /users`
+- `POST /users`
+- `GET /sites`
+- `POST /sites`
+
+**Materials & Stock**
+- `GET /materials`
+- `POST /materials`
+- `GET /stock_levels?site_id=`
+- `POST /receive_material` — supports bulk input + file upload
+- `POST /request_issue`
+- `POST /approve_issue`
+- `GET /transactions?site_id=&material_id=`
+
+**Reports**
+- `GET /reports/daily_issues?site_id=`
+- `GET /reports/stock_summary?site_id=`
+
+---
+
+✅ **Goal:**  
+Build a functional MVP web app with responsive UI, role-based controls, unique audit trail for all stock movements, uploaded document support, and clean extensible codebase that can later be converted to a native phone app.
+
+Focus on:  
+- Clear roles & permissions (cost visibility hidden from Storesman)  
+- Accurate stock tracking with valuations  
+- Exportable reports  
+- Uploaded supporting documents  
+- Notifications (low stock/pending approvals) — optional for MVP
+
+---
+
+Output working code with clean comments and README. Use best practices for scalability and maintainability.
