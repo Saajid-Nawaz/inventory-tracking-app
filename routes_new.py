@@ -694,6 +694,106 @@ def view_stock():
                          selected_site=selected_site)
 
 
+@app.route('/download_stock_excel')
+@login_required
+def download_stock_excel():
+    """Download stock levels as Excel file"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    site_id = request.args.get('site_id', type=int)
+    
+    try:
+        # Get stock summary data
+        stock_summary = InventoryService.get_stock_summary(site_id)
+        
+        # Create Excel file
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+        
+        wb = Workbook()
+        ws = wb.active
+        
+        # Set title
+        site_name = Site.query.get(site_id).name if site_id else 'All Sites'
+        ws.title = f"Stock Levels - {site_name}"
+        
+        # Headers
+        headers = ['Site', 'Material Name', 'Current Stock', 'Unit', 'Minimum Level', 'Status', 'Total Value', 'Last Updated']
+        
+        # Style headers
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        for row_num, item in enumerate(stock_summary, 2):
+            ws.cell(row=row_num, column=1, value=item.site_name)
+            ws.cell(row=row_num, column=2, value=item.material_name)
+            ws.cell(row=row_num, column=3, value=float(item.quantity))
+            ws.cell(row=row_num, column=4, value=item.unit)
+            ws.cell(row=row_num, column=5, value=float(item.minimum_level) if item.minimum_level else 0)
+            
+            # Status
+            if item.minimum_level and item.quantity <= item.minimum_level:
+                status = "Low Stock"
+                status_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
+            elif item.minimum_level and item.quantity <= (item.minimum_level * 1.5):
+                status = "Warning"
+                status_fill = PatternFill(start_color="FFD93D", end_color="FFD93D", fill_type="solid")
+            else:
+                status = "Normal"
+                status_fill = PatternFill(start_color="6BCF7F", end_color="6BCF7F", fill_type="solid")
+            
+            status_cell = ws.cell(row=row_num, column=6, value=status)
+            status_cell.fill = status_fill
+            
+            ws.cell(row=row_num, column=7, value=float(item.total_value))
+            ws.cell(row=row_num, column=8, value=item.updated_at.strftime('%Y-%m-%d %H:%M:%S') if item.updated_at else 'N/A')
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Generate filename
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"stock_levels_{site_name.replace(' ', '_')}_{timestamp}.xlsx"
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating stock Excel: {str(e)}")
+        flash('Error generating Excel file', 'error')
+        return redirect(url_for('view_stock'))
+
+
 @app.route('/approve_requests')
 @login_required
 def approve_requests():

@@ -34,8 +34,14 @@
         </div>
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="fas fa-info-circle me-2"></i>Stock Summary</h5>
+                    {% if stock_summary %}
+                    <a href="{{ url_for('download_stock_excel', site_id=selected_site.id if selected_site else '') }}" 
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel me-1"></i>Download Excel
+                    </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row">
