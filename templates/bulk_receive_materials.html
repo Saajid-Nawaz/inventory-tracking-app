@@ -144,9 +144,6 @@ function waitForJQuery() {
 
 function initializeBulkReceive() {
     $(document).ready(function() {
-        // Get the first row's select element to clone options
-        var firstRowSelect = $('#materialsTable tbody tr:first-child select');
-        
         // Add new row
         $('#addRowBtn').click(function() {
             // Clone the first row
@@ -204,41 +201,5 @@ function initializeBulkReceive() {
 
 // Start the initialization
 waitForJQuery();
-
-    // Remove row
-    $(document).on('click', '.remove-row', function() {
-        if ($('#materialsTable tbody tr').length > 1) {
-            $(this).closest('tr').remove();
-            updateTotalItems();
-            updateGrandTotal();
-        } else {
-            alert('At least one material item is required.');
-        }
-    });
-
-    // Calculate total value when quantity or unit cost changes
-    $(document).on('input', '.quantity-input, .unit-cost-input', function() {
-        var row = $(this).closest('tr');
-        var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
-        var unitCost = parseFloat(row.find('.unit-cost-input').val()) || 0;
-        var totalValue = quantity * unitCost;
-        
-        row.find('.total-value').val(totalValue.toFixed(2));
-        updateGrandTotal();
-    });
-
-    function updateTotalItems() {
-        var totalItems = $('#materialsTable tbody tr').length;
-        $('#totalItems').text(totalItems);
-    }
-
-    function updateGrandTotal() {
-        var grandTotal = 0;
-        $('.total-value').each(function() {
-            grandTotal += parseFloat($(this).val()) || 0;
-        });
-        $('#grandTotal').text(grandTotal.toFixed(2));
-    }
-});
 </script>
 {% endblock %}
