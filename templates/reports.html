@@ -6,254 +6,179 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h1><i class="fas fa-chart-bar me-2"></i>Reports & Analytics</h1>
-            <p class="text-muted">Generate comprehensive reports and analytics for inventory management</p>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Reports & Analytics
+                </h2>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5><i class="fas fa-file-pdf me-2"></i>Daily Reports</h5>
-                </div>
-                <div class="card-body">
-                    <p>Generate daily transaction and issue reports</p>
-                    <form method="GET" action="{{ url_for('generate_daily_report') }}">
-                        <div class="mb-3">
-                            <label for="daily_site" class="form-label">Site</label>
-                            <select class="form-select" id="daily_site" name="site_id" required>
-                                <option value="">Select Site...</option>
-                                {% for site in sites %}
-                                <option value="{{ site.id }}">{{ site.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="report_date" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="report_date" name="report_date" 
-                                   value="{{ today }}" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-download me-2"></i>Generate PDF
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5><i class="fas fa-file-excel me-2"></i>Stock Reports</h5>
-                </div>
-                <div class="card-body">
-                    <p>Export current stock levels and summaries</p>
-                    <form method="GET" action="{{ url_for('generate_stock_report') }}">
-                        <div class="mb-3">
-                            <label for="stock_site" class="form-label">Site</label>
-                            <select class="form-select" id="stock_site" name="site_id" required>
-                                <option value="">Select Site...</option>
-                                {% for site in sites %}
-                                <option value="{{ site.id }}">{{ site.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="format" class="form-label">Format</label>
-                            <select class="form-select" id="format" name="format" required>
-                                <option value="excel">Excel (.xlsx)</option>
-                                <option value="pdf">PDF</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-download me-2"></i>Export Report
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5><i class="fas fa-chart-line me-2"></i>Transaction History</h5>
-                </div>
-                <div class="card-body">
-                    <p>Detailed transaction history with filters</p>
-                    <form method="GET" action="{{ url_for('generate_transaction_report') }}">
-                        <div class="mb-3">
-                            <label for="trans_site" class="form-label">Site</label>
-                            <select class="form-select" id="trans_site" name="site_id">
-                                <option value="">All Sites</option>
-                                {% for site in sites %}
-                                <option value="{{ site.id }}">{{ site.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label for="start_date" class="form-label">Start Date</label>
-                                <input type="date" class="form-control" id="start_date" name="start_date" 
-                                       value="{{ week_ago }}">
-                            </div>
-                            <div class="col-6">
-                                <label for="end_date" class="form-label">End Date</label>
-                                <input type="date" class="form-control" id="end_date" name="end_date" 
-                                       value="{{ today }}">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-info w-100">
-                            <i class="fas fa-download me-2"></i>Generate Report
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Report</h5>
-                </div>
-                <div class="card-body">
-                    <p>Items below minimum stock levels</p>
-                    <form method="GET" action="{{ url_for('generate_low_stock_report') }}">
-                        <div class="mb-3">
-                            <label for="low_stock_site" class="form-label">Site</label>
-                            <select class="form-select" id="low_stock_site" name="site_id">
-                                <option value="">All Sites</option>
-                                {% for site in sites %}
-                                <option value="{{ site.id }}">{{ site.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="low_stock_format" class="form-label">Format</label>
-                            <select class="form-select" id="low_stock_format" name="format" required>
-                                <option value="pdf">PDF</option>
-                                <option value="excel">Excel (.xlsx)</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="fas fa-download me-2"></i>Generate Report
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5><i class="fas fa-calendar-alt me-2"></i>Monthly Summary</h5>
-                </div>
-                <div class="card-body">
-                    <p>Monthly inventory movement summary</p>
-                    <form method="GET" action="{{ url_for('generate_monthly_report') }}">
-                        <div class="mb-3">
-                            <label for="monthly_site" class="form-label">Site</label>
-                            <select class="form-select" id="monthly_site" name="site_id">
-                                <option value="">All Sites</option>
-                                {% for site in sites %}
-                                <option value="{{ site.id }}">{{ site.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="month" class="form-label">Month</label>
-                            <input type="month" class="form-control" id="month" name="month" 
-                                   value="{{ current_month }}" required>
-                        </div>
-                        <button type="submit" class="btn btn-secondary w-100">
-                            <i class="fas fa-download me-2"></i>Generate Summary
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-12">
+    <!-- Report Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-info-circle me-2"></i>Report Information</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-day me-2"></i>
+                        Daily Issues Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Generate detailed daily material issuance reports for any site.</p>
+                    <form method="GET" action="{{ url_for('reports') }}">
+                        <div class="mb-3">
+                            <label for="daily_site_id" class="form-label">Select Site</label>
+                            <select class="form-control" id="daily_site_id" name="site_id" required>
+                                <option value="">Choose a site...</option>
+                                {% for site in sites %}
+                                    {% if not user_site_id or site.id == user_site_id %}
+                                        <option value="{{ site.id }}">{{ site.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="daily_report_date" class="form-label">Report Date</label>
+                            <input type="date" class="form-control" id="daily_report_date" name="report_date" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-warehouse me-2"></i>
+                        Stock Summary Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Current stock levels and valuation for all materials at a site.</p>
+                    <form method="GET" action="{{ url_for('reports') }}">
+                        <div class="mb-3">
+                            <label for="stock_site_id" class="form-label">Select Site</label>
+                            <select class="form-control" id="stock_site_id" name="site_id" required>
+                                <option value="">Choose a site...</option>
+                                {% for site in sites %}
+                                    {% if not user_site_id or site.id == user_site_id %}
+                                        <option value="{{ site.id }}">{{ site.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stock_report_format" class="form-label">Format</label>
+                            <select class="form-control" id="stock_report_format" name="format">
+                                <option value="pdf">PDF Report</option>
+                                <option value="excel">Excel Export</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Transaction History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Detailed transaction history with filters for date range and material.</p>
+                    <form method="GET" action="{{ url_for('reports') }}">
+                        <div class="mb-3">
+                            <label for="trans_site_id" class="form-label">Select Site</label>
+                            <select class="form-control" id="trans_site_id" name="site_id" required>
+                                <option value="">Choose a site...</option>
+                                {% for site in sites %}
+                                    {% if not user_site_id or site.id == user_site_id %}
+                                        <option value="{{ site.id }}">{{ site.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="trans_start_date" class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="trans_start_date" name="start_date">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="trans_end_date" class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="trans_end_date" name="end_date">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download me-2"></i>Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Quick Statistics
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>PDF Reports Include:</h6>
-                            <ul>
-                                <li>Site information and branding</li>
-                                <li>Detailed transaction listings</li>
-                                <li>Stock level summaries</li>
-                                <li>FIFO cost calculations</li>
-                                <li>Approval status tracking</li>
-                            </ul>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ sites|length }}</h3>
+                                <p class="text-muted mb-0">Total Sites</p>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Excel Reports Include:</h6>
-                            <ul>
-                                <li>Raw data for analysis</li>
-                                <li>Sortable and filterable columns</li>
-                                <li>Formulas for calculations</li>
-                                <li>Multiple worksheets</li>
-                                <li>Charts and graphs</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6>Report Generation Tips:</h6>
-                            <div class="alert alert-info">
-                                <i class="fas fa-lightbulb me-2"></i>
-                                <strong>Tip:</strong> Reports are generated in real-time based on current database data. 
-                                For large date ranges, generation may take a few moments.
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-success">Active</h3>
+                                <p class="text-muted mb-0">System Status</p>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Report Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="fas fa-check text-success me-2"></i>All reports include FIFO cost calculations</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Real-time data from active inventory</li>
+                        <li><i class="fas fa-check text-success me-2"></i>PDF and Excel export options</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Audit trail included in all reports</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-set today's date for convenience
-    const today = new Date().toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    // Set default values if not already set
-    if (!document.getElementById('report_date').value) {
-        document.getElementById('report_date').value = today;
-    }
-    if (!document.getElementById('start_date').value) {
-        document.getElementById('start_date').value = weekAgo;
-    }
-    if (!document.getElementById('end_date').value) {
-        document.getElementById('end_date').value = today;
-    }
-    
-    // Add form validation
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
-            
-            // Re-enable button after 5 seconds in case of errors
-            setTimeout(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = submitBtn.innerHTML.replace('Generating...', 'Generate Report');
-            }, 5000);
-        });
-    });
-});
-</script>
 {% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base_new.html" %}
+
+{% block title %}View Stock - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-boxes me-2"></i>Stock Overview</h1>
+            <p class="text-muted">View current stock levels and inventory across all sites</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-filter me-2"></i>Filter by Site</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="d-flex">
+                        <select name="site_id" class="form-select me-2">
+                            <option value="">All Sites</option>
+                            {% for site in sites %}
+                                <option value="{{ site.id }}" {% if selected_site and selected_site.id == site.id %}selected{% endif %}>
+                                    {{ site.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Stock Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>Total Items:</strong> {{ stock_summary|length }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Selected Site:</strong> {{ selected_site.name if selected_site else 'All Sites' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-warehouse me-2"></i>Stock Levels</h5>
+                </div>
+                <div class="card-body">
+                    {% if stock_summary %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Site</th>
+                                        <th>Material</th>
+                                        <th>Current Stock</th>
+                                        <th>Unit</th>
+                                        <th>Minimum Level</th>
+                                        <th>Status</th>
+                                        <th>Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in stock_summary %}
+                                    <tr>
+                                        <td>{{ item.site_name }}</td>
+                                        <td>{{ item.material_name }}</td>
+                                        <td>{{ "%.2f"|format(item.quantity) }}</td>
+                                        <td>{{ item.unit }}</td>
+                                        <td>{{ "%.2f"|format(item.minimum_level) if item.minimum_level else 'N/A' }}</td>
+                                        <td>
+                                            {% if item.minimum_level and item.quantity <= item.minimum_level %}
+                                                <span class="badge bg-danger">Low Stock</span>
+                                            {% elif item.minimum_level and item.quantity <= (item.minimum_level * 1.5) %}
+                                                <span class="badge bg-warning">Warning</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Normal</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.updated_at.strftime('%m/%d/%Y %H:%M') if item.updated_at else 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                            <h5>No stock data available</h5>
+                            <p class="text-muted">
+                                {% if selected_site %}
+                                    No stock found for {{ selected_site.name }}
+                                {% else %}
+                                    No stock found in any site
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

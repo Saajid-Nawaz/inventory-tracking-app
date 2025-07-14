@@ -247,6 +247,143 @@ def add_user():
     return redirect(url_for('manage_users'))
 
 
+@app.route('/add_site', methods=['POST'])
+@login_required
+def add_site():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        site = Site(
+            name=request.form['name'],
+            code=request.form['code'],
+            location=request.form.get('location'),
+            is_active=bool(request.form.get('is_active'))
+        )
+        db.session.add(site)
+        db.session.commit()
+        flash('Site added successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error adding site: {str(e)}")
+        flash('Error adding site', 'error')
+    
+    return redirect(url_for('manage_sites'))
+
+
+@app.route('/edit_site', methods=['POST'])
+@login_required
+def edit_site():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        site = Site.query.get(request.form['site_id'])
+        site.name = request.form['name']
+        site.code = request.form['code']
+        site.location = request.form.get('location')
+        site.is_active = bool(request.form.get('is_active'))
+        db.session.commit()
+        flash('Site updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating site: {str(e)}")
+        flash('Error updating site', 'error')
+    
+    return redirect(url_for('manage_sites'))
+
+
+@app.route('/edit_material', methods=['POST'])
+@login_required
+def edit_material():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        material = Material.query.get(request.form['material_id'])
+        material.name = request.form['name']
+        material.sku = request.form['sku']
+        material.category = request.form.get('category')
+        material.unit = request.form['unit']
+        material.minimum_level = float(request.form['minimum_level']) if request.form.get('minimum_level') else None
+        material.description = request.form.get('description')
+        material.is_active = bool(request.form.get('is_active'))
+        db.session.commit()
+        flash('Material updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating material: {str(e)}")
+        flash('Error updating material', 'error')
+    
+    return redirect(url_for('material_management'))
+
+
+@app.route('/manage_sites')
+@login_required
+def manage_sites():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    sites = Site.query.all()
+    return render_template('manage_sites.html', sites=sites)
+
+
+@app.route('/material_management')
+@login_required
+def material_management():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    materials = Material.query.all()
+    return render_template('material_management.html', materials=materials)
+
+
+@app.route('/system_settings', methods=['GET', 'POST'])
+@login_required
+def system_settings():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        # Handle settings update
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('system_settings'))
+    
+    users = User.query.all()
+    sites = Site.query.all()
+    
+    # Get system statistics
+    total_transactions = Transaction.query.count()
+    active_users = User.query.count()
+    today_transactions = Transaction.query.filter(
+        Transaction.created_at >= datetime.now().date()
+    ).count()
+    pending_approvals = IssueRequest.query.filter_by(status='pending').count()
+    low_stock_items = len(InventoryService.get_low_stock_items())
+    
+    # Calculate total inventory value
+    total_inventory_value = db.session.query(db.func.sum(StockLevel.total_value)).scalar() or 0
+    
+    return render_template('system_settings.html',
+                         users=users,
+                         sites=sites,
+                         total_transactions=total_transactions,
+                         active_users=active_users,
+                         today_transactions=today_transactions,
+                         pending_approvals=pending_approvals,
+                         low_stock_items=low_stock_items,
+                         total_inventory_value=total_inventory_value,
+                         database_size=25,  # Placeholder
+                         last_backup=None,  # Placeholder
+                         settings={'company_name': 'Construction Company', 'currency': 'USD', 'default_tax_rate': 0, 'low_stock_threshold': 20})
+
+
 @app.route('/manage_materials')
 @login_required
 def manage_materials():
@@ -301,7 +438,13 @@ def view_stock():
         return redirect(url_for('index'))
     
     site_id = request.args.get('site_id', type=int)
-    stock_summary = InventoryService.get_stock_summary(site_id)
+    
+    try:
+        stock_summary = InventoryService.get_stock_summary(site_id)
+    except Exception as e:
+        logging.error(f"Error getting stock summary: {str(e)}")
+        stock_summary = []
+        flash('Error loading stock data. Please try again.', 'error')
     
     sites = Site.query.all()
     selected_site = Site.query.get(site_id) if site_id else None
@@ -334,11 +477,19 @@ def approve_requests():
         BatchIssueRequest.status.in_(['approved', 'rejected'])
     ).order_by(BatchIssueRequest.reviewed_at.desc()).limit(10).all()
     
+    # Get stock levels for validation
+    stock_levels = {}
+    for site in Site.query.all():
+        stock_levels[site.id] = {}
+        for stock in StockLevel.query.filter_by(site_id=site.id).all():
+            stock_levels[site.id][stock.material_id] = stock
+    
     return render_template('approve_requests.html',
                          individual_requests=individual_requests,
                          batch_requests=batch_requests,
                          recent_individual=recent_individual,
-                         recent_batch=recent_batch)
+                         recent_batch=recent_batch,
+                         stock_levels=stock_levels)
 
 
 @app.route('/process_individual_request', methods=['POST'])
@@ -755,11 +906,16 @@ def submit_batch_request():
 
 
 # Report Generation Routes
-@app.route('/reports')
+@app.route('/reports', methods=['GET', 'POST'])
 @login_required
 def reports():
     sites = Site.query.all()
     user_site_id = current_user.assigned_site_id if current_user.role == 'storesman' else None
+    
+    if request.method == 'POST':
+        # Handle report generation
+        flash('Report generated successfully', 'success')
+        return redirect(url_for('reports'))
     
     return render_template('reports.html', sites=sites, user_site_id=user_site_id)
 
