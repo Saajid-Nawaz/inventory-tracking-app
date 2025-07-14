@@ -950,6 +950,46 @@ def submit_batch_request():
     return redirect(url_for('batch_request'))
 
 
+@app.route('/view_transactions')
+@login_required
+def view_transactions():
+    """View all transactions for site engineers"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    site_id = request.args.get('site_id', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    transaction_type = request.args.get('type')
+    
+    # Convert date strings to datetime objects
+    start_date_obj = datetime.strptime(start_date, '%Y-%m-%d') if start_date else None
+    end_date_obj = datetime.strptime(end_date, '%Y-%m-%d') if end_date else None
+    
+    # Get transactions based on filters
+    transactions = InventoryService.get_transaction_history(
+        site_id=site_id,
+        start_date=start_date_obj,
+        end_date=end_date_obj
+    )
+    
+    # Filter by transaction type if specified
+    if transaction_type:
+        transactions = [txn for txn in transactions if txn.type == transaction_type]
+    
+    # Get sites for filter dropdown
+    sites = Site.query.all()
+    
+    return render_template('view_transactions.html',
+                         transactions=transactions,
+                         sites=sites,
+                         selected_site_id=site_id,
+                         selected_start_date=start_date,
+                         selected_end_date=end_date,
+                         selected_type=transaction_type)
+
 # Report Generation Routes
 @app.route('/reports', methods=['GET', 'POST'])
 @login_required
