@@ -1,0 +1,229 @@
+{% extends "base_new.html" %}
+
+{% block title %}Stock Transfer - Multi-Site Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1><i class="fas fa-exchange-alt me-2"></i>Stock Transfer Request</h1>
+                    <p class="text-muted">Transfer materials between sites</p>
+                </div>
+                <a href="{{ url_for('storesman_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus me-2"></i>New Transfer Request</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('stock_transfer') }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="from_site_id" class="form-label">From Site</label>
+                                    <select name="from_site_id" id="from_site_id" class="form-select" required>
+                                        <option value="">Select source site...</option>
+                                        {% for site in sites %}
+                                            <option value="{{ site.id }}" 
+                                                    {% if current_user.assigned_site_id == site.id %}selected{% endif %}>
+                                                {{ site.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="to_site_id" class="form-label">To Site</label>
+                                    <select name="to_site_id" id="to_site_id" class="form-select" required>
+                                        <option value="">Select destination site...</option>
+                                        {% for site in sites %}
+                                            <option value="{{ site.id }}">{{ site.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority</label>
+                                    <select name="priority" id="priority" class="form-select" required>
+                                        <option value="normal">Normal</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reason" class="form-label">Reason for Transfer</label>
+                                    <input type="text" name="reason" id="reason" class="form-control" 
+                                           placeholder="e.g., Urgent project requirement">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Materials to Transfer</label>
+                            <div id="materials-container">
+                                <div class="row mb-2 material-row">
+                                    <div class="col-md-8">
+                                        <select name="materials[0][material_id]" class="form-select" required>
+                                            <option value="">Select material...</option>
+                                            {% for material in materials %}
+                                                <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="number" name="materials[0][quantity]" class="form-control" 
+                                               placeholder="Quantity" min="0.01" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-material" 
+                                                onclick="removeMaterial(this)" style="display: none;">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMaterial()">
+                                <i class="fas fa-plus"></i> Add Material
+                            </button>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i> Submit Transfer Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let materialCount = 1;
+
+function addMaterial() {
+    const container = document.getElementById('materials-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 material-row';
+    newRow.innerHTML = `
+        <div class="col-md-8">
+            <select name="materials[${materialCount}][material_id]" class="form-select" required>
+                <option value="">Select material...</option>
+                {% for material in materials %}
+                    <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="materials[${materialCount}][quantity]" class="form-control" 
+                   placeholder="Quantity" min="0.01" step="0.01" required>
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm remove-material" 
+                    onclick="removeMaterial(this)">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    materialCount++;
+    
+    // Show remove buttons for all rows except the first one
+    updateRemoveButtons();
+}
+
+function removeMaterial(button) {
+    const row = button.closest('.material-row');
+    row.remove();
+    updateRemoveButtons();
+}
+
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.material-row');
+    rows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.remove-material');
+        if (index === 0 && rows.length === 1) {
+            removeBtn.style.display = 'none';
+        } else {
+            removeBtn.style.display = 'inline-block';
+        }
+    });
+}
+
+// Prevent selecting same site for from and to
+document.getElementById('from_site_id').addEventListener('change', function() {
+    const fromSiteId = this.value;
+    const toSiteSelect = document.getElementById('to_site_id');
+    
+    // Re-enable all options
+    Array.from(toSiteSelect.options).forEach(option => {
+        option.disabled = false;
+    });
+    
+    // Disable the selected from site in to site dropdown
+    if (fromSiteId) {
+        const optionToDisable = toSiteSelect.querySelector(`option[value="${fromSiteId}"]`);
+        if (optionToDisable) {
+            optionToDisable.disabled = true;
+        }
+        
+        // If currently selected to site is same as from site, clear it
+        if (toSiteSelect.value === fromSiteId) {
+            toSiteSelect.value = '';
+        }
+    }
+});
+
+document.getElementById('to_site_id').addEventListener('change', function() {
+    const toSiteId = this.value;
+    const fromSiteSelect = document.getElementById('from_site_id');
+    
+    // Re-enable all options
+    Array.from(fromSiteSelect.options).forEach(option => {
+        option.disabled = false;
+    });
+    
+    // Disable the selected to site in from site dropdown
+    if (toSiteId) {
+        const optionToDisable = fromSiteSelect.querySelector(`option[value="${toSiteId}"]`);
+        if (optionToDisable) {
+            optionToDisable.disabled = true;
+        }
+        
+        // If currently selected from site is same as to site, clear it
+        if (fromSiteSelect.value === toSiteId) {
+            fromSiteSelect.value = '';
+        }
+    }
+});
+
+// Initialize remove buttons state
+updateRemoveButtons();
+</script>
+{% endblock %}

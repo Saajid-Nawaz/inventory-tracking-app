@@ -807,6 +807,9 @@ def approve_requests():
     # Get pending batch requests
     batch_requests = BatchIssueRequest.query.filter_by(status='pending').all()
     
+    # Get pending stock transfer requests
+    transfer_requests = StockTransferRequest.query.filter_by(status='pending').all()
+    
     # Get recent decisions
     recent_individual = IssueRequest.query.filter(
         IssueRequest.status.in_(['approved', 'rejected'])
@@ -815,6 +818,10 @@ def approve_requests():
     recent_batch = BatchIssueRequest.query.filter(
         BatchIssueRequest.status.in_(['approved', 'rejected'])
     ).order_by(BatchIssueRequest.reviewed_at.desc()).limit(10).all()
+    
+    recent_transfers = StockTransferRequest.query.filter(
+        StockTransferRequest.status.in_(['approved', 'rejected'])
+    ).order_by(StockTransferRequest.reviewed_at.desc()).limit(10).all()
     
     # Get stock levels for validation
     stock_levels = {}
@@ -826,8 +833,10 @@ def approve_requests():
     return render_template('approve_requests.html',
                          individual_requests=individual_requests,
                          batch_requests=batch_requests,
+                         transfer_requests=transfer_requests,
                          recent_individual=recent_individual,
                          recent_batch=recent_batch,
+                         recent_transfers=recent_transfers,
                          stock_levels=stock_levels)
 
 
@@ -1493,6 +1502,109 @@ def generate_transaction_history_report():
         logging.error(f"Error generating transaction history report: {str(e)}")
         flash('Error generating report', 'error')
         return redirect(url_for('reports'))
+
+
+@app.route('/process_transfer_request', methods=['POST'])
+@login_required
+def process_transfer_request():
+    """Process stock transfer request (approve/reject)"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        transfer_id = request.form.get('transfer_id')
+        action = request.form.get('action')
+        review_notes = request.form.get('review_notes')
+        
+        InventoryService.process_stock_transfer_request(
+            transfer_id=transfer_id,
+            approved_by=current_user.id,
+            action=action,
+            review_notes=review_notes
+        )
+        
+        flash(f'Transfer request {action}d successfully', 'success')
+        
+    except Exception as e:
+        logging.error(f"Error processing transfer request: {str(e)}")
+        flash(f'Error processing transfer request: {str(e)}', 'error')
+    
+    return redirect(url_for('approve_requests'))
+
+
+@app.route('/stock_transfer', methods=['GET', 'POST'])
+@login_required
+def stock_transfer():
+    """Handle stock transfer requests"""
+    if current_user.role != 'storesman':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        try:
+            from_site_id = int(request.form.get('from_site_id'))
+            to_site_id = int(request.form.get('to_site_id'))
+            priority = request.form.get('priority', 'normal')
+            reason = request.form.get('reason')
+            
+            # Validate sites
+            if from_site_id == to_site_id:
+                flash('Source and destination sites must be different', 'error')
+                return redirect(url_for('stock_transfer'))
+            
+            # Check if storesman has access to from_site
+            if current_user.assigned_site_id != from_site_id:
+                flash('You can only transfer from your assigned site', 'error')
+                return redirect(url_for('stock_transfer'))
+            
+            # Parse materials
+            materials = []
+            form_data = request.form.to_dict()
+            
+            # Extract material data from form
+            for key, value in form_data.items():
+                if key.startswith('materials[') and key.endswith('][material_id]'):
+                    index = key.split('[')[1].split(']')[0]
+                    material_id = int(value)
+                    quantity_key = f'materials[{index}][quantity]'
+                    
+                    if quantity_key in form_data:
+                        quantity = float(form_data[quantity_key])
+                        materials.append({
+                            'material_id': material_id,
+                            'quantity': quantity
+                        })
+            
+            if not materials:
+                flash('At least one material must be selected', 'error')
+                return redirect(url_for('stock_transfer'))
+            
+            # Create transfer request
+            transfer_request = InventoryService.create_stock_transfer_request(
+                from_site_id=from_site_id,
+                to_site_id=to_site_id,
+                materials=materials,
+                requested_by=current_user.id,
+                reason=reason,
+                priority=priority
+            )
+            
+            flash(f'Stock transfer request {transfer_request.transfer_id} submitted successfully', 'success')
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            logging.error(f"Error creating stock transfer request: {str(e)}")
+            flash('Error creating transfer request', 'error')
+            return redirect(url_for('stock_transfer'))
+    
+    # GET request - show form
+    sites = Site.query.all()
+    materials = Material.query.all()
+    
+    return render_template('stock_transfer.html',
+                         sites=sites,
+                         materials=materials)
 
 
 @app.route('/stock_adjustments')

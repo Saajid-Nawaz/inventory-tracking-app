@@ -398,6 +398,110 @@ class InventoryService:
             db.session.rollback()
             logging.error(f"Error processing batch request: {str(e)}")
             raise
+    
+    @staticmethod
+    def create_stock_transfer_request(from_site_id, to_site_id, materials, requested_by, reason=None, priority='normal'):
+        """
+        Create a new stock transfer request
+        """
+        try:
+            from models_new import StockTransferRequest, StockTransferItem
+            
+            # Generate unique transfer ID
+            transfer_id = StockTransferRequest.generate_transfer_id()
+            
+            # Create transfer request
+            transfer_request = StockTransferRequest(
+                transfer_id=transfer_id,
+                from_site_id=from_site_id,
+                to_site_id=to_site_id,
+                requested_by=requested_by,
+                reason=reason,
+                priority=priority
+            )
+            db.session.add(transfer_request)
+            db.session.flush()  # Get the ID
+            
+            # Add transfer items
+            for material_data in materials:
+                transfer_item = StockTransferItem(
+                    transfer_id=transfer_id,
+                    material_id=material_data['material_id'],
+                    quantity_requested=material_data['quantity']
+                )
+                db.session.add(transfer_item)
+            
+            db.session.commit()
+            
+            logging.info(f"Stock transfer request created: {transfer_id}")
+            return transfer_request
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating stock transfer request: {str(e)}")
+            raise
+    
+    @staticmethod
+    def process_stock_transfer_request(transfer_id, approved_by, action='approve', review_notes=None):
+        """
+        Process a stock transfer request (approve or reject)
+        """
+        try:
+            from models_new import StockTransferRequest
+            
+            transfer_request = StockTransferRequest.query.filter_by(transfer_id=transfer_id).first()
+            if not transfer_request:
+                raise ValueError("Transfer request not found")
+            
+            if transfer_request.status != 'pending':
+                raise ValueError("Transfer request already processed")
+            
+            transfer_request.status = 'approved' if action == 'approve' else 'rejected'
+            transfer_request.reviewed_by = approved_by
+            transfer_request.reviewed_at = datetime.utcnow()
+            transfer_request.review_notes = review_notes
+            
+            # If approved, process the stock transfers
+            if action == 'approve':
+                for item in transfer_request.items:
+                    # Issue from source site
+                    InventoryService.issue_material(
+                        site_id=transfer_request.from_site_id,
+                        material_id=item.material_id,
+                        quantity=item.quantity_requested,
+                        project_code=f"TRANSFER-{transfer_id}",
+                        approved_by=approved_by,
+                        created_by=transfer_request.requested_by,
+                        notes=f"Stock transfer to {transfer_request.to_site.name}"
+                    )
+                    
+                    # Receive at destination site - using average cost from source
+                    source_stock = StockLevel.query.filter_by(
+                        site_id=transfer_request.from_site_id,
+                        material_id=item.material_id
+                    ).first()
+                    
+                    avg_cost = source_stock.average_cost if source_stock and source_stock.quantity > 0 else 0
+                    
+                    InventoryService.receive_material(
+                        site_id=transfer_request.to_site_id,
+                        material_id=item.material_id,
+                        quantity=item.quantity_requested,
+                        unit_cost=avg_cost,
+                        project_code=f"TRANSFER-{transfer_id}",
+                        created_by=approved_by,
+                        notes=f"Stock transfer from {transfer_request.from_site.name}"
+                    )
+            
+            db.session.commit()
+            
+            logging.info(f"Stock transfer request {action}d: {transfer_id}")
+            return transfer_request
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error processing stock transfer request: {str(e)}")
+            raise
 
 
 class ReportService:

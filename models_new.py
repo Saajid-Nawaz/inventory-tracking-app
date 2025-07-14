@@ -230,6 +230,68 @@ class FIFOBatch(db.Model):
 
 
 # Legacy models for backward compatibility - with unique table names
+class StockTransferRequest(db.Model):
+    __tablename__ = 'stock_transfer_requests'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    transfer_id = db.Column(db.String(20), unique=True, nullable=False)  # Unique transfer ID
+    
+    # Source and destination sites
+    from_site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
+    to_site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=False)
+    
+    # Request details
+    requested_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    requested_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Approval details
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    review_notes = db.Column(db.Text, nullable=True)
+    
+    # Transfer details
+    reason = db.Column(db.Text, nullable=True)
+    priority = db.Column(db.String(20), default='normal')  # normal, urgent
+    
+    # Relationships
+    from_site = db.relationship('Site', foreign_keys=[from_site_id], backref='outgoing_transfers')
+    to_site = db.relationship('Site', foreign_keys=[to_site_id], backref='incoming_transfers')
+    requester = db.relationship('User', foreign_keys=[requested_by])
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by])
+    
+    @staticmethod
+    def generate_transfer_id():
+        """Generate a unique transfer ID"""
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d")
+        # Get count of transfers today
+        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        count = StockTransferRequest.query.filter(
+            StockTransferRequest.requested_at >= today_start
+        ).count()
+        return f"TRF-{timestamp}-{count + 1:04d}"
+    
+    def __repr__(self):
+        return f'<StockTransferRequest {self.transfer_id}>'
+
+
+class StockTransferItem(db.Model):
+    __tablename__ = 'stock_transfer_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    transfer_id = db.Column(db.String(20), db.ForeignKey('stock_transfer_requests.transfer_id'), nullable=False)
+    material_id = db.Column(db.Integer, db.ForeignKey('materials.id'), nullable=False)
+    quantity_requested = db.Column(db.Float, nullable=False)
+    
+    # Relationships
+    transfer = db.relationship('StockTransferRequest', backref='items')
+    material = db.relationship('Material')
+    
+    def __repr__(self):
+        return f'<StockTransferItem {self.transfer_id} - {self.material.name}>'
+
+
 class LegacyMaterialRecord(db.Model):
     __tablename__ = 'legacy_material_record'
     id = db.Column(db.Integer, primary_key=True)
