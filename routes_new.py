@@ -257,9 +257,9 @@ def add_site():
     try:
         site = Site(
             name=request.form['name'],
-            code=request.form['code'],
+            code=request.form.get('code', f"SITE{Site.query.count() + 1:03d}"),
             location=request.form.get('location'),
-            is_active=bool(request.form.get('is_active'))
+            is_active=True
         )
         db.session.add(site)
         db.session.commit()
@@ -269,7 +269,11 @@ def add_site():
         logging.error(f"Error adding site: {str(e)}")
         flash('Error adding site', 'error')
     
-    return redirect(url_for('manage_sites'))
+    # Redirect to appropriate page based on referrer
+    if 'system_settings' in request.referrer:
+        return redirect(url_for('system_settings'))
+    else:
+        return redirect(url_for('manage_sites'))
 
 
 @app.route('/edit_site', methods=['POST'])
@@ -282,9 +286,16 @@ def edit_site():
     try:
         site = Site.query.get(request.form['site_id'])
         site.name = request.form['name']
-        site.code = request.form['code']
         site.location = request.form.get('location')
-        site.is_active = bool(request.form.get('is_active'))
+        site.updated_at = datetime.utcnow()
+        
+        # Set code if provided, otherwise keep existing
+        if request.form.get('code'):
+            site.code = request.form['code']
+        
+        if request.form.get('is_active'):
+            site.is_active = bool(request.form.get('is_active'))
+            
         db.session.commit()
         flash('Site updated successfully', 'success')
     except Exception as e:
@@ -292,7 +303,11 @@ def edit_site():
         logging.error(f"Error updating site: {str(e)}")
         flash('Error updating site', 'error')
     
-    return redirect(url_for('manage_sites'))
+    # Redirect to appropriate page based on referrer
+    if 'system_settings' in request.referrer:
+        return redirect(url_for('system_settings'))
+    else:
+        return redirect(url_for('manage_sites'))
 
 
 @app.route('/edit_material', methods=['POST'])
