@@ -1433,6 +1433,64 @@ def generate_stock_report():
         return redirect(url_for('reports'))
 
 
+@app.route('/generate_transaction_history_report')
+@login_required
+def generate_transaction_history_report():
+    """Generate transaction history report"""
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    site_id = request.args.get('site_id', type=int)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if not site_id:
+        flash('Site selection is required', 'error')
+        return redirect(url_for('reports'))
+    
+    try:
+        # Parse dates if provided
+        start_date_obj = None
+        end_date_obj = None
+        
+        if start_date:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+        if end_date:
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        site = Site.query.get(site_id)
+        if not site:
+            flash('Site not found', 'error')
+            return redirect(url_for('reports'))
+        
+        # Get transaction history
+        transactions_data = ReportService.generate_transaction_history_report(
+            site_id, start_date_obj, end_date_obj
+        )
+        
+        # Generate PDF report
+        pdf_data = PDFReportGenerator.generate_transaction_history_report(
+            site.name, start_date_obj, end_date_obj, transactions_data
+        )
+        
+        # Generate filename
+        date_suffix = f"_{start_date}_{end_date}" if start_date and end_date else ""
+        filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.pdf"
+        
+        return send_file(
+            BytesIO(pdf_data),
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating transaction history report: {str(e)}")
+        flash('Error generating report', 'error')
+        return redirect(url_for('reports'))
+
+
 @app.route('/stock_adjustments')
 @login_required
 def stock_adjustments():

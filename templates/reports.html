@@ -27,7 +27,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Generate detailed daily material issuance reports for any site.</p>
-                    <form method="GET" action="{{ url_for('reports') }}">
+                    <form method="GET" action="{{ url_for('generate_daily_report') }}">
                         <div class="mb-3">
                             <label for="daily_site_id" class="form-label">Select Site</label>
                             <select class="form-control" id="daily_site_id" name="site_id" required>
@@ -61,7 +61,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Current stock levels and valuation for all materials at a site.</p>
-                    <form method="GET" action="{{ url_for('reports') }}">
+                    <form method="GET" action="{{ url_for('generate_stock_report') }}">
                         <div class="mb-3">
                             <label for="stock_site_id" class="form-label">Select Site</label>
                             <select class="form-control" id="stock_site_id" name="site_id" required>
@@ -98,7 +98,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Detailed transaction history with filters for date range and material.</p>
-                    <form method="GET" action="{{ url_for('reports') }}">
+                    <form method="GET" action="{{ url_for('generate_transaction_history_report') }}">
                         <div class="mb-3">
                             <label for="trans_site_id" class="form-label">Select Site</label>
                             <select class="form-control" id="trans_site_id" name="site_id" required>
