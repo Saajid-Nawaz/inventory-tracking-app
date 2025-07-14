@@ -19,6 +19,31 @@ from models_new import (
 from inventory_service import InventoryService, ReportService
 from report_generator import PDFReportGenerator, ExcelReportGenerator
 
+# Define comprehensive material categories
+MATERIAL_CATEGORIES = [
+    'Construction',
+    'Masonry', 
+    'Electrical',
+    'Plumbing',
+    'Timber',
+    'Roofing',
+    'Aggregates',
+    'Finishing',
+    'Gardening',
+    'Landscaping',
+    'HVAC',
+    'Insulation',
+    'Flooring',
+    'Hardware',
+    'Safety',
+    'Tools',
+    'General'
+]
+
+def get_material_categories():
+    """Get all available material categories"""
+    return MATERIAL_CATEGORIES
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -43,17 +68,17 @@ def initialize_default_data():
             for site in sites:
                 db.session.add(site)
         
-        # Create default materials
+        # Create default materials with categories
         if not Material.query.first():
             materials = [
-                Material(name='Portland Cement', unit='bags', description='50kg bags', cost_per_unit=12.50, minimum_level=100),
-                Material(name='Reinforcement Steel', unit='kg', description='Grade 60 rebar', cost_per_unit=0.85, minimum_level=1000),
-                Material(name='Concrete Blocks', unit='pieces', description='8x8x16 blocks', cost_per_unit=2.25, minimum_level=500),
-                Material(name='Sand', unit='cubic meters', description='Fine construction sand', cost_per_unit=25.00, minimum_level=50),
-                Material(name='Gravel', unit='cubic meters', description='Coarse aggregate', cost_per_unit=30.00, minimum_level=30),
-                Material(name='Lumber 2x4', unit='pieces', description='8ft pressure treated', cost_per_unit=8.50, minimum_level=200),
-                Material(name='Roofing Sheets', unit='pieces', description='Galvanized iron sheets', cost_per_unit=15.75, minimum_level=100),
-                Material(name='PVC Pipes', unit='meters', description='4-inch diameter', cost_per_unit=5.50, minimum_level=500)
+                Material(name='Portland Cement', unit='bags', description='50kg bags', cost_per_unit=12.50, minimum_level=100, category='Construction'),
+                Material(name='Reinforcement Steel', unit='kg', description='Grade 60 rebar', cost_per_unit=0.85, minimum_level=1000, category='Construction'),
+                Material(name='Concrete Blocks', unit='pieces', description='8x8x16 blocks', cost_per_unit=2.25, minimum_level=500, category='Masonry'),
+                Material(name='Sand', unit='cubic meters', description='Fine construction sand', cost_per_unit=25.00, minimum_level=50, category='Aggregates'),
+                Material(name='Gravel', unit='cubic meters', description='Coarse aggregate', cost_per_unit=30.00, minimum_level=30, category='Aggregates'),
+                Material(name='Lumber 2x4', unit='pieces', description='8ft pressure treated', cost_per_unit=8.50, minimum_level=200, category='Timber'),
+                Material(name='Roofing Sheets', unit='pieces', description='Galvanized iron sheets', cost_per_unit=15.75, minimum_level=100, category='Roofing'),
+                Material(name='PVC Pipes', unit='meters', description='4-inch diameter', cost_per_unit=5.50, minimum_level=500, category='Plumbing')
             ]
             for material in materials:
                 db.session.add(material)
@@ -406,15 +431,39 @@ def manage_materials():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    materials = Material.query.all()
+    # Get filter parameters
+    category_filter = request.args.get('category', '')
+    search_query = request.args.get('search', '')
+    
+    # Build query with filters
+    query = Material.query
+    
+    if category_filter:
+        query = query.filter(Material.category == category_filter)
+    
+    if search_query:
+        query = query.filter(Material.name.ilike(f'%{search_query}%'))
+    
+    materials = query.order_by(Material.category, Material.name).all()
+    
+    # Get all categories for filter dropdown (both from database and predefined)
+    db_categories = db.session.query(Material.category).distinct().order_by(Material.category).all()
+    db_categories = [cat[0] for cat in db_categories if cat[0]]
+    
+    # Combine with predefined categories
+    all_categories = sorted(set(db_categories + MATERIAL_CATEGORIES))
     
     # Add missing fields for template compatibility
     for material in materials:
         material.sku = f"SKU-{material.id:04d}"
-        material.category = "Construction Material"
         material.is_active = True
     
-    return render_template('material_management.html', materials=materials)
+    return render_template('material_management.html', 
+                         materials=materials, 
+                         categories=all_categories,
+                         predefined_categories=MATERIAL_CATEGORIES,
+                         selected_category=category_filter,
+                         search_query=search_query)
 
 
 @app.route('/add_material', methods=['POST'])
@@ -430,13 +479,15 @@ def add_material():
         description = request.form.get('description')
         cost_per_unit = float(request.form.get('cost_per_unit', 0))
         minimum_level = float(request.form.get('minimum_level', 0))
+        category = request.form.get('category', 'General')
         
         material = Material(
             name=name,
             unit=unit,
             description=description,
             cost_per_unit=cost_per_unit,
-            minimum_level=minimum_level
+            minimum_level=minimum_level,
+            category=category
         )
         
         db.session.add(material)
@@ -464,49 +515,79 @@ def download_material_template():
         import pandas as pd
         from io import BytesIO
         
-        # Create sample data for the template
+        # Create sample data for the template with comprehensive categories
         template_data = {
             'Material Name': [
                 'Portland Cement',
                 'Steel Rebar 12mm',
                 'Ready Mix Concrete',
                 'Electrical Wire 2.5mm',
-                'PVC Pipe 110mm'
+                'PVC Pipe 110mm',
+                'Grass Seed',
+                'Garden Soil',
+                'Brick Blocks',
+                'Plumbing Fittings',
+                'Paint Brushes'
             ],
             'Unit': [
                 'bags',
                 'kg',
                 'm3',
                 'm',
-                'm'
+                'm',
+                'kg',
+                'bags',
+                'pieces',
+                'pieces',
+                'pieces'
             ],
             'Description': [
                 'High quality Portland cement for construction',
                 'Steel reinforcement bars 12mm diameter',
                 'Ready mix concrete M20 grade',
                 'Electrical wire 2.5mm copper',
-                'PVC drainage pipe 110mm diameter'
+                'PVC drainage pipe 110mm diameter',
+                'Lawn grass seed for landscaping',
+                'Organic garden soil for planting',
+                'Standard brick blocks for masonry',
+                'Copper pipe fittings for plumbing',
+                'Professional paint brushes for finishing'
             ],
             'Cost per Unit': [
                 8.50,
                 0.85,
                 120.00,
                 2.30,
-                15.75
+                15.75,
+                25.00,
+                15.00,
+                0.45,
+                12.50,
+                8.50
             ],
             'Minimum Level': [
                 50,
                 500,
                 10,
                 100,
-                20
+                20,
+                50,
+                100,
+                1000,
+                100,
+                50
             ],
             'Category': [
-                'Cement',
-                'Steel',
-                'Concrete',
+                'Construction',
+                'Construction',
+                'Construction',
                 'Electrical',
-                'Plumbing'
+                'Plumbing',
+                'Gardening',
+                'Gardening',
+                'Masonry',
+                'Plumbing',
+                'Finishing'
             ]
         }
         
@@ -637,7 +718,8 @@ def upload_materials_excel():
                     'unit': unit,
                     'description': str(row.get('Description', '')).strip() if pd.notna(row.get('Description')) else '',
                     'cost_per_unit': float(row.get('Cost per Unit', 0)) if pd.notna(row.get('Cost per Unit')) else 0.0,
-                    'minimum_level': float(row.get('Minimum Level', 0)) if pd.notna(row.get('Minimum Level')) else 0.0
+                    'minimum_level': float(row.get('Minimum Level', 0)) if pd.notna(row.get('Minimum Level')) else 0.0,
+                    'category': str(row.get('Category', 'General')).strip() if pd.notna(row.get('Category')) else 'General'
                 }
                 
                 if existing_material and update_existing:
@@ -646,6 +728,7 @@ def upload_materials_excel():
                     existing_material.description = material_data['description']
                     existing_material.cost_per_unit = material_data['cost_per_unit']
                     existing_material.minimum_level = material_data['minimum_level']
+                    existing_material.category = material_data['category']
                     updated_count += 1
                 else:
                     # Create new material

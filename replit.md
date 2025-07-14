@@ -152,6 +152,12 @@ The application follows a traditional three-tier architecture:
   - Fixed unit validation that was preventing materials with units like 'tonnes', 'tonner', 'EA' from being imported
   - Enhanced error reporting to provide detailed feedback on upload success/failure
   - All previously rejected materials should now import successfully
+- **Material Category System**: Comprehensive material categorization system implemented:
+  - Added 17 predefined categories: Construction, Masonry, Electrical, Plumbing, Timber, Roofing, Aggregates, Finishing, Gardening, Landscaping, HVAC, Insulation, Flooring, Hardware, Safety, Tools, General
+  - Updated database schema to include category field with proper categorization
+  - Enhanced material management with category-based filtering and search functionality
+  - Excel upload template now includes category column for bulk material categorization
+  - All existing materials properly categorized across construction, electrical, plumbing, and other relevant categories
 
 ### Technical Enhancements
 1. **Enhanced Data Models**: Complete restructure with proper relationships for multi-site operations

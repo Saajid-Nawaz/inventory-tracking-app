@@ -52,6 +52,7 @@ class Material(db.Model):
     description = db.Column(db.Text, nullable=True)
     cost_per_unit = db.Column(db.Float, nullable=False, default=0.0)
     minimum_level = db.Column(db.Float, nullable=False, default=0.0)
+    category = db.Column(db.String(50), nullable=False, default='General')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
