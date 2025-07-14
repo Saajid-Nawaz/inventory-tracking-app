@@ -369,10 +369,101 @@ class ExcelReportGenerator:
         return excel_data
     
     @staticmethod
-    def generate_transaction_history_excel(site_name, transactions_data):
+    def generate_transaction_history_excel(site_name, transactions_data, start_date=None, end_date=None):
         """
         Generate Excel report for transaction history
         """
+        buffer = BytesIO()
+        
+        # Create DataFrame
+        data = []
+        for txn in transactions_data:
+            data.append({
+                'Serial Number': txn.serial_number,
+                'Date': txn.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'Type': txn.type.title(),
+                'Material': txn.material_name,
+                'Quantity': txn.quantity,
+                'Unit': txn.unit,
+                'Unit Cost': txn.unit_cost if txn.unit_cost else 0,
+                'Total Value': txn.total_value if txn.total_value else 0,
+                'Project Code': txn.project_code or 'N/A',
+                'Created By': txn.created_by or 'System',
+                'Notes': txn.notes or 'N/A'
+            })
+        
+        df = pd.DataFrame(data)
+        
+        # Create Excel file with multiple sheets
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            # Main transaction data sheet
+            df.to_excel(writer, sheet_name='Transaction History', index=False)
+            
+            # Summary sheet
+            if not df.empty:
+                summary_data = {
+                    'Metric': [
+                        'Total Transactions', 
+                        'Total Receipts', 
+                        'Total Issues', 
+                        'Total Adjustments',
+                        'Total Value Impact',
+                        'Date Range'
+                    ],
+                    'Value': [
+                        len(df),
+                        len(df[df['Type'] == 'Receipt']),
+                        len(df[df['Type'] == 'Issue']),
+                        len(df[df['Type'] == 'Adjustment']),
+                        df['Total Value'].sum(),
+                        f"{start_date or 'All'} to {end_date or 'All'}"
+                    ]
+                }
+                summary_df = pd.DataFrame(summary_data)
+                summary_df.to_excel(writer, sheet_name='Summary', index=False)
+                
+                # Material breakdown sheet
+                material_summary = df.groupby('Material').agg({
+                    'Quantity': 'sum',
+                    'Total Value': 'sum'
+                }).reset_index()
+                material_summary.to_excel(writer, sheet_name='Material Summary', index=False)
+            
+            # Format the sheets
+            workbook = writer.book
+            
+            # Format transaction history sheet
+            worksheet = writer.sheets['Transaction History']
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min((max_length + 2) * 1.2, 50)  # Cap at 50 characters
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Format currency columns
+            from openpyxl.styles import NamedStyle
+            currency_style = NamedStyle(name="currency")
+            currency_style.number_format = '"ZMW" #,##0.00'
+            
+            # Apply currency formatting to cost and value columns
+            for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
+                if row[6].value is not None:  # Unit Cost column
+                    row[6].style = currency_style
+                if row[7].value is not None:  # Total Value column
+                    row[7].style = currency_style
+        
+        excel_data = buffer.getvalue()
+        buffer.close()
+        
+        return excel_data
         buffer = BytesIO()
         
         # Create DataFrame

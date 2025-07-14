@@ -1457,8 +1457,9 @@ def generate_transaction_history_report():
     site_id = request.args.get('site_id', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    report_format = request.args.get('format', 'pdf')  # Default to PDF
     
-    logging.info(f"Transaction history report requested for site_id={site_id}, start_date={start_date}, end_date={end_date}")
+    logging.info(f"Transaction history report requested for site_id={site_id}, start_date={start_date}, end_date={end_date}, format={report_format}")
     
     if not site_id:
         flash('Site selection is required', 'error')
@@ -1490,21 +1491,37 @@ def generate_transaction_history_report():
             for i, txn in enumerate(transactions_data[:3]):  # Log first 3 transactions
                 logging.info(f"Transaction {i+1}: {txn.serial_number} - {txn.type} - {txn.quantity}")
         
-        # Generate PDF report
-        pdf_data = PDFReportGenerator.generate_transaction_history_report(
-            site.name, start_date_obj, end_date_obj, transactions_data
-        )
-        
         # Generate filename
         date_suffix = f"_{start_date}_{end_date}" if start_date and end_date else ""
-        filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.pdf"
         
-        return send_file(
-            BytesIO(pdf_data),
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/pdf'
-        )
+        if report_format == 'excel':
+            # Generate Excel report
+            excel_data = ExcelReportGenerator.generate_transaction_history_excel(
+                site.name, transactions_data, start_date_obj, end_date_obj
+            )
+            
+            filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.xlsx"
+            
+            return send_file(
+                BytesIO(excel_data),
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+        else:
+            # Generate PDF report
+            pdf_data = PDFReportGenerator.generate_transaction_history_report(
+                site.name, start_date_obj, end_date_obj, transactions_data
+            )
+            
+            filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.pdf"
+            
+            return send_file(
+                BytesIO(pdf_data),
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/pdf'
+            )
         
     except Exception as e:
         logging.error(f"Error generating transaction history report: {str(e)}")
