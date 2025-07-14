@@ -392,7 +392,14 @@ def manage_materials():
         return redirect(url_for('index'))
     
     materials = Material.query.all()
-    return render_template('manage_materials.html', materials=materials)
+    
+    # Add missing fields for template compatibility
+    for material in materials:
+        material.sku = f"SKU-{material.id:04d}"
+        material.category = "Construction Material"
+        material.is_active = True
+    
+    return render_template('material_management.html', materials=materials)
 
 
 @app.route('/add_material', methods=['POST'])
