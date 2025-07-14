@@ -34,22 +34,33 @@
                 
                 <div class="text-center">
                     <h6 class="text-muted">Demo Accounts:</h6>
+                    {% if demo_accounts %}
+                    <div class="small text-muted">
+                        {% for account in demo_accounts %}
+                        <div class="mb-2">
+                            <strong>{{ account.role }}:</strong><br>
+                            {{ account.username }} / {{ account.password }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
                     <div class="row">
                         <div class="col-6">
                             <small class="text-muted">
                                 <strong>Site Engineer:</strong><br>
-                                Username: engineer<br>
+                                Username: engineer1<br>
                                 Password: engineer123
                             </small>
                         </div>
                         <div class="col-6">
                             <small class="text-muted">
-                                <strong>Storesperson:</strong><br>
-                                Username: storesperson<br>
+                                <strong>Storesman:</strong><br>
+                                Username: storesman1<br>
                                 Password: store123
                             </small>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

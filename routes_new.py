@@ -122,7 +122,16 @@ def login():
         else:
             flash('Invalid username or password', 'error')
     
-    return render_template('login.html')
+    # Get demo accounts for display
+    demo_accounts = [
+        {'username': 'engineer1', 'password': 'engineer123', 'role': 'Site Engineer'},
+        {'username': 'engineer2', 'password': 'engineer123', 'role': 'Site Engineer'},
+        {'username': 'storesman1', 'password': 'store123', 'role': 'Storesman (Main Construction Site)'},
+        {'username': 'storesman2', 'password': 'store123', 'role': 'Storesman (North Warehouse)'},
+        {'username': 'storesman3', 'password': 'store123', 'role': 'Storesman (South Depot)'}
+    ]
+    
+    return render_template('login.html', demo_accounts=demo_accounts)
 
 
 @app.route('/logout')
@@ -407,7 +416,8 @@ def storesman_dashboard():
                          low_stock_items=low_stock_items,
                          recent_transactions=recent_transactions,
                          pending_individual=pending_individual,
-                         pending_batch=pending_batch)
+                         pending_batch=pending_batch,
+                         now=datetime.now())
 
 
 @app.route('/receive_materials')
@@ -801,6 +811,33 @@ def api_materials():
         })
     
     return jsonify(data)
+
+
+@app.route('/api/pending_counts')
+@login_required
+def api_pending_counts():
+    """API endpoint for dashboard pending counts"""
+    if current_user.role == 'site_engineer':
+        # Count pending individual requests
+        pending_individual = IssueRequest.query.filter_by(status='pending').count()
+        # Count pending batch requests
+        pending_batch = BatchIssueRequest.query.filter_by(status='pending').count()
+        total_pending = pending_individual + pending_batch
+    else:
+        # For storesmen, count their own pending requests
+        pending_individual = IssueRequest.query.filter_by(
+            created_by=current_user.id, status='pending'
+        ).count()
+        pending_batch = BatchIssueRequest.query.filter_by(
+            created_by=current_user.id, status='pending'
+        ).count()
+        total_pending = pending_individual + pending_batch
+    
+    return jsonify({
+        'pending_individual': pending_individual,
+        'pending_batch': pending_batch,
+        'total_pending': total_pending
+    })
 
 
 # Error handlers
