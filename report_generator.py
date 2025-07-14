@@ -202,6 +202,103 @@ class PDFReportGenerator:
         
         return pdf_data
 
+    @staticmethod
+    def generate_transaction_history_report(site_name, start_date, end_date, transactions_data, currency='ZMW'):
+        """
+        Generate PDF report for transaction history
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title = Paragraph(f"Transaction History Report - {site_name}", styles['Title'])
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Date range
+        date_range = ""
+        if start_date and end_date:
+            date_range = f"From {start_date} to {end_date}"
+        elif start_date:
+            date_range = f"From {start_date}"
+        elif end_date:
+            date_range = f"Until {end_date}"
+        else:
+            date_range = "All transactions"
+        
+        story.append(Paragraph(date_range, styles['Normal']))
+        story.append(Spacer(1, 12))
+        
+        if transactions_data:
+            # Create table headers
+            table_data = [
+                ['Date', 'Transaction ID', 'Type', 'Material', 'Quantity', 'Unit Cost', 'Total Value', 'Project Code', 'Created By']
+            ]
+            
+            total_value = 0
+            for transaction in transactions_data:
+                created_by = transaction.creator_user.username if transaction.creator_user else 'Unknown'
+                table_data.append([
+                    transaction.created_at.strftime('%Y-%m-%d %H:%M'),
+                    transaction.serial_number,
+                    transaction.type.title(),
+                    transaction.material_name,
+                    f"{transaction.quantity:.2f}",
+                    PDFReportGenerator.format_currency(transaction.unit_cost, currency),
+                    PDFReportGenerator.format_currency(transaction.total_value, currency),
+                    transaction.issued_to_project_code or 'N/A',
+                    created_by
+                ])
+                total_value += transaction.total_value
+            
+            # Create table
+            table = Table(table_data, colWidths=[1*inch, 1.2*inch, 0.8*inch, 1.5*inch, 0.8*inch, 1*inch, 1*inch, 1*inch, 1*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 7)
+            ]))
+            
+            # Color code transaction types
+            for i, transaction in enumerate(transactions_data, 1):
+                if transaction.type == 'issue':
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, i), (-1, i), colors.lightcoral),
+                    ]))
+                elif transaction.type == 'receive':
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, i), (-1, i), colors.lightgreen),
+                    ]))
+            
+            story.append(table)
+            
+            # Summary
+            story.append(Spacer(1, 20))
+            summary_text = f"""
+            <b>Summary:</b><br/>
+            Total Transactions: {len(transactions_data)}<br/>
+            Total Value Impact: {PDFReportGenerator.format_currency(total_value, currency)}<br/>
+            Report Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            """
+            story.append(Paragraph(summary_text, styles['Normal']))
+        else:
+            story.append(Paragraph("No transactions found for the selected period.", styles['Normal']))
+        
+        # Build PDF
+        doc.build(story)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        return pdf_data
+
 
 class ExcelReportGenerator:
     """Generate Excel reports for various inventory data"""
