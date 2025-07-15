@@ -1994,7 +1994,16 @@ def api_materials():
 @app.route('/api/sites')
 @login_required
 def api_sites():
-    sites = Site.query.all()
+    # Role-based access control for sites
+    if current_user.role == 'storesman':
+        # Storesmen can only access their assigned site
+        if current_user.assigned_site_id:
+            sites = Site.query.filter_by(id=current_user.assigned_site_id).all()
+        else:
+            sites = []
+    else:
+        # Site engineers can access all sites
+        sites = Site.query.all()
     
     data = []
     for site in sites:

@@ -147,6 +147,15 @@ The application follows a traditional three-tier architecture:
 - **Authentication System**: Confirmed login/logout functionality for both Site Engineers and Storesmen
 - **Template System**: All critical pages (receive_materials, request_materials, approve_requests) fully functional
 - **API Endpoints**: Materials API (8 items), Sites API (3 items), and pending counts API all operational
+
+### Critical Security Implementation (July 15, 2025)
+- **Storesman Silo Isolation**: Implemented complete data isolation between sites for storesman users
+- **Role-Based API Access Control**: Fixed critical security vulnerability in `/api/sites` endpoint
+- **Site-Specific Access Enforcement**: All API endpoints now properly restrict storesman access to assigned sites only
+- **Cross-Site Access Prevention**: Storesman attempts to access other sites return 403 Forbidden
+- **Dashboard Isolation**: Each storesman dashboard shows only their assigned site information
+- **Complete Data Segregation**: Confirmed through comprehensive testing that no storesman can access other sites' data
+- **Stock Transfer Exception**: Only stock transfers between sites can break silo isolation (with proper approval workflow)
 - **Excel Upload Fix**: Expanded valid units list to include common construction materials units:
   - Added: tonnes, tonner, tonne, EA, each, pieces, meters, metres, litres, cubic meters, square meters
   - Fixed unit validation that was preventing materials with units like 'tonnes', 'tonner', 'EA' from being imported
