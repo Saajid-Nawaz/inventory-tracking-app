@@ -206,6 +206,7 @@ def site_engineer_dashboard():
     # Get pending requests
     pending_individual_requests = IssueRequest.query.filter_by(status='pending').count()
     pending_batch_requests = BatchIssueRequest.query.filter_by(status='pending').count()
+    pending_transfer_requests = StockTransferRequest.query.filter_by(status='pending').count()
     
     # Get low stock alerts
     low_stock_items = InventoryService.get_low_stock_items()
@@ -217,6 +218,7 @@ def site_engineer_dashboard():
                          sites=sites,
                          pending_individual_requests=pending_individual_requests,
                          pending_batch_requests=pending_batch_requests,
+                         pending_transfer_requests=pending_transfer_requests,
                          low_stock_items=low_stock_items,
                          recent_transactions=recent_transactions)
 
@@ -1960,7 +1962,9 @@ def api_pending_counts():
         pending_individual = IssueRequest.query.filter_by(status='pending').count()
         # Count pending batch requests
         pending_batch = BatchIssueRequest.query.filter_by(status='pending').count()
-        total_pending = pending_individual + pending_batch
+        # Count pending stock transfer requests
+        pending_transfers = StockTransferRequest.query.filter_by(status='pending').count()
+        total_pending = pending_individual + pending_batch + pending_transfers
     else:
         # For storesmen, count their own pending requests
         pending_individual = IssueRequest.query.filter_by(
@@ -1969,11 +1973,16 @@ def api_pending_counts():
         pending_batch = BatchIssueRequest.query.filter_by(
             created_by=current_user.id, status='pending'
         ).count()
-        total_pending = pending_individual + pending_batch
+        # Count their own pending transfer requests
+        pending_transfers = StockTransferRequest.query.filter_by(
+            requested_by=current_user.id, status='pending'
+        ).count()
+        total_pending = pending_individual + pending_batch + pending_transfers
     
     return jsonify({
         'pending_individual': pending_individual,
         'pending_batch': pending_batch,
+        'pending_transfers': pending_transfers,
         'total_pending': total_pending
     })
 
