@@ -834,7 +834,8 @@ def upload_materials_excel():
                     'pcs', 'pieces', 'ea', 'each', 'no',
                     'liters', 'litres', 'l',
                     'cubic meters', 'cubic metres',
-                    'square meters', 'square metres'
+                    'square meters', 'square metres',
+                    'box', 'boxes', 'sheets', 'rolls', 'units'
                 ]
                 if unit.lower() not in valid_units:
                     logging.warning(f"Invalid unit '{unit}' for material '{material_name}'. Skipping.")
