@@ -65,8 +65,12 @@
                                                 <select class="form-select" name="material_id[]" required>
                                                     <option value="">Select Material...</option>
                                                     {% for material in materials %}
-                                                    <option value="{{ material.id }}" data-unit="{{ material.unit }}">
-                                                        {{ material.name }} ({{ material.unit }})
+                                                    <option value="{{ material.id }}" 
+                                                            data-unit="{{ material.unit }}"
+                                                            data-category="{{ material.category or '' }}"
+                                                            data-cost="{{ material.cost_per_unit }}"
+                                                            data-min-level="{{ material.minimum_level }}">
+                                                        {{ material.name }} - {{ material.category or 'General' }} ({{ material.unit }})
                                                     </option>
                                                     {% endfor %}
                                                 </select>
@@ -134,25 +138,57 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2 for existing dropdowns
+    initializeMaterialDropdowns();
+    
     // Add new row
     document.getElementById('addRowBtn').addEventListener('click', function() {
-        // Clone the first row
-        var firstRow = document.querySelector('#materialsTable tbody tr:first-child');
-        var newRow = firstRow.cloneNode(true);
-        
-        // Clear the values in the new row
-        var inputs = newRow.querySelectorAll('input');
-        inputs.forEach(function(input) {
-            input.value = '';
-        });
-        
-        var selects = newRow.querySelectorAll('select');
-        selects.forEach(function(select) {
-            select.value = '';
-        });
+        // Create new row HTML with enhanced material options
+        var newRowHtml = `
+            <tr>
+                <td>
+                    <select class="form-select" name="material_id[]" required>
+                        <option value="">Select Material...</option>
+                        {% for material in materials %}
+                        <option value="{{ material.id }}" 
+                                data-unit="{{ material.unit }}"
+                                data-category="{{ material.category or '' }}"
+                                data-cost="{{ material.cost_per_unit }}"
+                                data-min-level="{{ material.minimum_level }}">
+                            {{ material.name }} - {{ material.category or 'General' }} ({{ material.unit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control quantity-input" 
+                           name="quantity[]" step="0.01" min="0.01" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control unit-cost-input" 
+                           name="unit_cost[]" step="0.01" min="0.01" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control total-value" 
+                           name="total_value[]" step="0.01" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
         
         // Add the new row to the table
-        document.querySelector('#materialsTable tbody').appendChild(newRow);
+        var tableBody = document.querySelector('#materialsTable tbody');
+        tableBody.insertAdjacentHTML('beforeend', newRowHtml);
+        
+        // Initialize Select2 for the new dropdown
+        var newRow = tableBody.lastElementChild;
+        var newSelect = newRow.querySelector('select');
+        initializeSingleMaterialDropdown(newSelect);
+        
         updateTotalItems();
     });
 
@@ -210,6 +246,82 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize totals
     updateTotalItems();
     updateGrandTotal();
+});
+
+// Initialize Select2 for all existing material dropdowns
+function initializeMaterialDropdowns() {
+    var selects = document.querySelectorAll('select[name="material_id[]"]');
+    selects.forEach(function(select) {
+        initializeSingleMaterialDropdown(select);
+    });
+}
+
+// Initialize Select2 for a single material dropdown
+function initializeSingleMaterialDropdown(select) {
+    // Skip if already initialized
+    if ($(select).data('select2')) {
+        return;
+    }
+    
+    $(select).select2({
+        placeholder: 'Search materials...',
+        allowClear: true,
+        width: '100%',
+        dropdownAutoWidth: true,
+        templateResult: function(data) {
+            if (data.loading) return data.text;
+            
+            const $result = $('<div>').addClass('p-2');
+            const text = data.text || '';
+            
+            // Split by ' - ' to get name and category
+            const parts = text.split(' - ');
+            if (parts.length >= 2) {
+                $result.append($('<div>').addClass('fw-bold text-primary').text(parts[0]));
+                $result.append($('<small>').addClass('text-muted d-block').text(`Category: ${parts[1]}`));
+            } else {
+                $result.append($('<div>').addClass('fw-bold text-primary').text(text));
+            }
+            
+            // Add material info if available
+            if (data.element && data.element.dataset) {
+                const unit = data.element.dataset.unit;
+                const cost = data.element.dataset.cost;
+                
+                if (unit) {
+                    $result.append($('<small>').addClass('text-success d-block').text(`Unit: ${unit}`));
+                }
+                if (cost) {
+                    $result.append($('<small>').addClass('text-info d-block').text(`Cost: $${cost}`));
+                }
+            }
+            
+            return $result;
+        },
+        templateSelection: function(data) {
+            if (data.id) {
+                const text = data.text || '';
+                const parts = text.split(' - ');
+                const materialName = parts[0] || text;
+                
+                // Auto-fill unit cost when material is selected
+                if (data.element && data.element.dataset) {
+                    const cost = data.element.dataset.cost;
+                    const $row = $(data.element).closest('tr');
+                    const $unitCostInput = $row.find('.unit-cost-input');
+                    
+                    if (cost && $unitCostInput.length) {
+                        $unitCostInput.val(cost);
+                        // Trigger input event to update total
+                        $unitCostInput.trigger('input');
+                    }
+                }
+                
+                return materialName;
+            }
+            return data.text;
+        }
+    });
 });
 </script>
 {% endblock %}
