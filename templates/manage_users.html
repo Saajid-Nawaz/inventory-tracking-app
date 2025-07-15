@@ -161,13 +161,40 @@ function editUser(id, username, role, siteId, isActive) {
 }
 
 function confirmDelete(id, username) {
-    // Set the user details in the modal
-    document.getElementById('deleteUserName').textContent = username;
-    document.getElementById('deleteUserId').value = id;
+    console.log('confirmDelete called with:', id, username);
     
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
-    modal.show();
+    // Set the user details in the modal
+    const userNameElement = document.getElementById('deleteUserName');
+    const userIdElement = document.getElementById('deleteUserId');
+    
+    if (userNameElement && userIdElement) {
+        userNameElement.textContent = username;
+        userIdElement.value = id;
+        console.log('Modal elements updated');
+        
+        // Show the modal
+        const modalElement = document.getElementById('deleteUserModal');
+        if (modalElement) {
+            // Try both Bootstrap 5 and jQuery methods
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                console.log('Bootstrap 5 modal shown');
+            } else if (typeof $ !== 'undefined' && $.fn.modal) {
+                $(modalElement).modal('show');
+                console.log('jQuery modal shown');
+            } else {
+                // Fallback to basic JavaScript
+                modalElement.style.display = 'block';
+                modalElement.classList.add('show');
+                console.log('Manual modal shown');
+            }
+        } else {
+            console.error('Modal element not found');
+        }
+    } else {
+        console.error('Modal elements not found');
+    }
 }
 </script>
 {% endblock %}
