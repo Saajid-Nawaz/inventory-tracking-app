@@ -25,8 +25,13 @@
                                 <select class="form-select" id="material_id" name="material_id" required>
                                     <option value="">Select Material...</option>
                                     {% for material in materials %}
-                                    <option value="{{ material.id }}" data-unit="{{ material.unit }}" data-cost="{{ material.cost_per_unit }}">
-                                        {{ material.name }} ({{ material.unit }})
+                                    <option value="{{ material.id }}" 
+                                            data-unit="{{ material.unit }}" 
+                                            data-cost="{{ material.cost_per_unit }}"
+                                            data-description="{{ material.description or '' }}"
+                                            data-min-level="{{ material.minimum_level }}"
+                                            data-category="{{ material.category or '' }}">
+                                        {{ material.name }} ({{ material.unit }}) - {{ material.category or 'General' }}
                                     </option>
                                     {% endfor %}
                                 </select>

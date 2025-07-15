@@ -48,8 +48,12 @@
                                     <select class="form-select" name="material_id_0" required>
                                         <option value="">Select Material...</option>
                                         {% for item in stock_summary %}
-                                        <option value="{{ item.material_id }}" data-stock="{{ item.quantity }}" data-unit="{{ item.unit }}">
-                                            {{ item.material_name }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
+                                        <option value="{{ item.material_id }}" 
+                                                data-stock="{{ item.quantity }}" 
+                                                data-unit="{{ item.unit }}"
+                                                data-category="{{ item.category or '' }}"
+                                                data-min-level="{{ item.minimum_level or 0 }}">
+                                            {{ item.material_name }} - {{ item.category or 'General' }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
                                         </option>
                                         {% endfor %}
                                     </select>
@@ -133,8 +137,12 @@ function addMaterialRow() {
     const stockOptions = `
         <option value="">Select Material...</option>
         {% for item in stock_summary %}
-        <option value="{{ item.material_id }}" data-stock="{{ item.quantity }}" data-unit="{{ item.unit }}">
-            {{ item.material_name }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
+        <option value="{{ item.material_id }}" 
+                data-stock="{{ item.quantity }}" 
+                data-unit="{{ item.unit }}"
+                data-category="{{ item.category or '' }}"
+                data-min-level="{{ item.minimum_level or 0 }}">
+            {{ item.material_name }} - {{ item.category or 'General' }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
         </option>
         {% endfor %}
     `;
@@ -163,6 +171,14 @@ function addMaterialRow() {
     
     container.appendChild(newRow);
     materialRowCount++;
+    
+    // Initialize Select2 for the new dropdown
+    const newSelect = newRow.querySelector('select');
+    $(newSelect).select2({
+        placeholder: 'Search materials...',
+        allowClear: true,
+        width: '100%'
+    });
     
     // Add event listeners to the new row
     setupMaterialRowEvents(newRow);

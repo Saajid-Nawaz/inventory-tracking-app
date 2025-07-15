@@ -25,8 +25,12 @@
                                 <select class="form-select" id="material_id" name="material_id" required>
                                     <option value="">Select Material...</option>
                                     {% for item in stock_summary %}
-                                    <option value="{{ item.material_id }}" data-stock="{{ item.quantity }}" data-unit="{{ item.unit }}">
-                                        {{ item.material_name }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
+                                    <option value="{{ item.material_id }}" 
+                                            data-stock="{{ item.quantity }}" 
+                                            data-unit="{{ item.unit }}"
+                                            data-category="{{ item.category or '' }}"
+                                            data-min-level="{{ item.minimum_level or 0 }}">
+                                        {{ item.material_name }} - {{ item.category or 'General' }} ({{ "%.2f"|format(item.quantity) }} {{ item.unit }} available)
                                     </option>
                                     {% endfor %}
                                 </select>

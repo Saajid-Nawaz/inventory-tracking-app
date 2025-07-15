@@ -88,7 +88,13 @@
                                         <select name="materials[0][material_id]" class="form-select material-select" required onchange="updateUnit(this, 0)">
                                             <option value="">Select material...</option>
                                             {% for material in materials %}
-                                                <option value="{{ material.id }}" data-unit="{{ material.unit }}">{{ material.name }}</option>
+                                                <option value="{{ material.id }}" 
+                                                        data-unit="{{ material.unit }}"
+                                                        data-category="{{ material.category or '' }}"
+                                                        data-cost="{{ material.cost_per_unit }}"
+                                                        data-min-level="{{ material.minimum_level }}">
+                                                    {{ material.name }} - {{ material.category or 'General' }} ({{ material.unit }})
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -149,11 +155,17 @@ function addMaterial() {
     const newRow = document.createElement('div');
     newRow.className = 'row mb-2 material-row';
     
-    // Build material options
+    // Build enhanced material options with category and unit info
     let materialOptions = '<option value="">Select material...</option>';
-    materials.forEach(material => {
-        materialOptions += `<option value="${material.id}" data-unit="${material.unit}">${material.name}</option>`;
-    });
+    {% for material in materials %}
+        materialOptions += `<option value="{{ material.id }}" 
+                                    data-unit="{{ material.unit }}"
+                                    data-category="{{ material.category or '' }}"
+                                    data-cost="{{ material.cost_per_unit }}"
+                                    data-min-level="{{ material.minimum_level }}">
+                                {{ material.name }} - {{ material.category or 'General' }} ({{ material.unit }})
+                            </option>`;
+    {% endfor %}
     
     newRow.innerHTML = `
         <div class="col-md-6">
@@ -177,6 +189,15 @@ function addMaterial() {
         </div>
     `;
     container.appendChild(newRow);
+    
+    // Initialize Select2 for the new dropdown
+    const newSelect = newRow.querySelector('select');
+    $(newSelect).select2({
+        placeholder: 'Search materials...',
+        allowClear: true,
+        width: '100%'
+    });
+    
     materialCount++;
     
     // Show remove buttons for all rows except the first one
