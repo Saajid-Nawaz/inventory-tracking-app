@@ -177,19 +177,33 @@ function addMaterialRow() {
         placeholder: 'Search materials...',
         allowClear: true,
         width: '100%',
+        dropdownAutoWidth: true,
         templateResult: function(data) {
             if (data.loading) return data.text;
             
-            const $result = $('<div>');
+            const $result = $('<div>').addClass('p-2');
             const text = data.text || '';
             
             // Split by ' - ' to get name and category
             const parts = text.split(' - ');
             if (parts.length >= 2) {
-                $result.append($('<div>').addClass('fw-bold').text(parts[0]));
-                $result.append($('<small>').addClass('text-muted d-block').text(parts[1]));
+                $result.append($('<div>').addClass('fw-bold text-primary').text(parts[0]));
+                $result.append($('<small>').addClass('text-muted d-block').text(`Category: ${parts[1]}`));
             } else {
-                $result.text(text);
+                $result.append($('<div>').addClass('fw-bold text-primary').text(text));
+            }
+            
+            // Add material info if available
+            if (data.element && data.element.dataset) {
+                const unit = data.element.dataset.unit;
+                const stock = data.element.dataset.stock;
+                
+                if (unit) {
+                    $result.append($('<small>').addClass('text-success d-block').text(`Unit: ${unit}`));
+                }
+                if (stock) {
+                    $result.append($('<small>').addClass('text-info d-block').text(`Stock: ${stock}`));
+                }
             }
             
             return $result;
@@ -198,7 +212,20 @@ function addMaterialRow() {
             if (data.id) {
                 const text = data.text || '';
                 const parts = text.split(' - ');
-                return parts[0] || text; // Show only material name in selection
+                const materialName = parts[0] || text;
+                
+                // Auto-fill unit when material is selected
+                if (data.element && data.element.dataset) {
+                    const unit = data.element.dataset.unit;
+                    const $row = $(data.element).closest('.material-row');
+                    const $unitDisplay = $row.find('.unit-display');
+                    
+                    if (unit && $unitDisplay.length) {
+                        $unitDisplay.val(unit);
+                    }
+                }
+                
+                return materialName;
             }
             return data.text;
         }
@@ -263,19 +290,33 @@ document.addEventListener('DOMContentLoaded', function() {
             placeholder: 'Search materials...',
             allowClear: true,
             width: '100%',
+            dropdownAutoWidth: true,
             templateResult: function(data) {
                 if (data.loading) return data.text;
                 
-                const $result = $('<div>');
+                const $result = $('<div>').addClass('p-2');
                 const text = data.text || '';
                 
                 // Split by ' - ' to get name and category
                 const parts = text.split(' - ');
                 if (parts.length >= 2) {
-                    $result.append($('<div>').addClass('fw-bold').text(parts[0]));
-                    $result.append($('<small>').addClass('text-muted d-block').text(parts[1]));
+                    $result.append($('<div>').addClass('fw-bold text-primary').text(parts[0]));
+                    $result.append($('<small>').addClass('text-muted d-block').text(`Category: ${parts[1]}`));
                 } else {
-                    $result.text(text);
+                    $result.append($('<div>').addClass('fw-bold text-primary').text(text));
+                }
+                
+                // Add material info if available
+                if (data.element && data.element.dataset) {
+                    const unit = data.element.dataset.unit;
+                    const stock = data.element.dataset.stock;
+                    
+                    if (unit) {
+                        $result.append($('<small>').addClass('text-success d-block').text(`Unit: ${unit}`));
+                    }
+                    if (stock) {
+                        $result.append($('<small>').addClass('text-info d-block').text(`Stock: ${stock}`));
+                    }
                 }
                 
                 return $result;
@@ -284,7 +325,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.id) {
                     const text = data.text || '';
                     const parts = text.split(' - ');
-                    return parts[0] || text; // Show only material name in selection
+                    const materialName = parts[0] || text;
+                    
+                    // Auto-fill unit when material is selected
+                    if (data.element && data.element.dataset) {
+                        const unit = data.element.dataset.unit;
+                        const $row = $(data.element).closest('.material-row');
+                        const $unitDisplay = $row.find('.unit-display');
+                        
+                        if (unit && $unitDisplay.length) {
+                            $unitDisplay.val(unit);
+                        }
+                    }
+                    
+                    return materialName;
                 }
                 return data.text;
             }
