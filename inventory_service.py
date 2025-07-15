@@ -7,7 +7,8 @@ from datetime import datetime
 from app import db
 from models_new import (
     Site, Material, StockLevel, Transaction, FIFOBatch, 
-    IssueRequest, BatchIssueRequest, BatchIssueItem, StockAdjustment
+    IssueRequest, BatchIssueRequest, BatchIssueItem, StockAdjustment,
+    StockTransferRequest, StockTransferItem
 )
 from sqlalchemy import func
 import logging
@@ -459,8 +460,6 @@ class InventoryService:
         Process a stock transfer request (approve or reject)
         """
         try:
-            from models_new import StockTransferRequest
-            
             transfer_request = StockTransferRequest.query.filter_by(transfer_id=transfer_id).first()
             if not transfer_request:
                 raise ValueError("Transfer request not found")
