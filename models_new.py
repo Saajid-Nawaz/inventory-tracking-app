@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'storesman' or 'site_engineer'
     assigned_site_id = db.Column(db.Integer, db.ForeignKey('sites.id'), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -33,8 +34,11 @@ class Site(db.Model):
     __tablename__ = 'sites'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(20), nullable=True)
     location = db.Column(db.String(200), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     stock_levels = db.relationship('StockLevel', backref='site', cascade='all, delete-orphan')
