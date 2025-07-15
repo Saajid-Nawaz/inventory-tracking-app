@@ -6,6 +6,20 @@ from sqlalchemy import UniqueConstraint
 import uuid
 
 
+class SystemSettings(db.Model):
+    __tablename__ = 'system_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(100), default='Construction Company')
+    currency = db.Column(db.String(10), default='ZMW')
+    default_tax_rate = db.Column(db.Float, default=0.0)
+    low_stock_threshold = db.Column(db.Integer, default=20)
+    email_notifications = db.Column(db.Boolean, default=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<SystemSettings {self.company_name}>'
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)

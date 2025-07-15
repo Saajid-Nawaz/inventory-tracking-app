@@ -14,7 +14,7 @@ from io import BytesIO
 from app import app, db
 from models_new import (
     User, Site, Material, StockLevel, Transaction, IssueRequest, BatchIssueRequest, 
-    BatchIssueItem, StockAdjustment, FIFOBatch, StockTransferRequest
+    BatchIssueItem, StockAdjustment, FIFOBatch, StockTransferRequest, SystemSettings
 )
 from inventory_service import InventoryService, ReportService
 from report_generator import PDFReportGenerator, ExcelReportGenerator
@@ -442,9 +442,30 @@ def system_settings():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
+    # Get or create system settings
+    settings = SystemSettings.query.first()
+    if not settings:
+        settings = SystemSettings()
+        db.session.add(settings)
+        db.session.commit()
+    
     if request.method == 'POST':
-        # Handle settings update
-        flash('Settings updated successfully', 'success')
+        try:
+            # Update settings from form
+            settings.company_name = request.form.get('company_name', settings.company_name)
+            settings.currency = request.form.get('currency', settings.currency)
+            settings.default_tax_rate = float(request.form.get('default_tax_rate', settings.default_tax_rate))
+            settings.low_stock_threshold = int(request.form.get('low_stock_threshold', settings.low_stock_threshold))
+            settings.email_notifications = bool(request.form.get('email_notifications'))
+            settings.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            flash('Settings updated successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error updating settings: {str(e)}")
+            flash('Error updating settings', 'error')
+        
         return redirect(url_for('system_settings'))
     
     users = User.query.all()
@@ -453,7 +474,7 @@ def system_settings():
     # Get system statistics
     total_transactions = Transaction.query.count()
     active_users = User.query.count()
-    active_sites = Site.query.count()  # All sites are considered active since we don't have is_active column
+    active_sites = Site.query.filter_by(is_active=True).count()
     today_transactions = Transaction.query.filter(
         Transaction.created_at >= datetime.now().date()
     ).count()
@@ -475,7 +496,7 @@ def system_settings():
                          total_inventory_value=total_inventory_value,
                          database_size=25,  # Placeholder
                          last_backup=None,  # Placeholder
-                         settings={'company_name': 'Construction Company', 'currency': 'USD', 'default_tax_rate': 0, 'low_stock_threshold': 20})
+                         settings=settings)
 
 
 @app.route('/manage_materials')
