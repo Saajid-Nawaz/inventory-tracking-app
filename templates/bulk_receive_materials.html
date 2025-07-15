@@ -137,27 +137,44 @@
 
 {% block scripts %}
 <script>
+// Build materials array from server-side data
+const materials = [
+    {% for material in materials %}
+    {
+        id: {{ material.id }}, 
+        name: "{{ material.name }}", 
+        unit: "{{ material.unit }}",
+        category: "{{ material.category or '' }}",
+        cost: {{ material.cost_per_unit }},
+        minLevel: {{ material.minimum_level }}
+    },
+    {% endfor %}
+];
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Select2 for existing dropdowns
     initializeMaterialDropdowns();
     
     // Add new row
     document.getElementById('addRowBtn').addEventListener('click', function() {
-        // Create new row HTML with enhanced material options
+        // Build material options HTML
+        let materialOptions = '<option value="">Select Material...</option>';
+        materials.forEach(material => {
+            materialOptions += `<option value="${material.id}" 
+                                        data-unit="${material.unit}"
+                                        data-category="${material.category}"
+                                        data-cost="${material.cost}"
+                                        data-min-level="${material.minLevel}">
+                                    ${material.name} - ${material.category || 'General'} (${material.unit})
+                                </option>`;
+        });
+        
+        // Create new row HTML
         var newRowHtml = `
             <tr>
                 <td>
                     <select class="form-select" name="material_id[]" required>
-                        <option value="">Select Material...</option>
-                        {% for material in materials %}
-                        <option value="{{ material.id }}" 
-                                data-unit="{{ material.unit }}"
-                                data-category="{{ material.category or '' }}"
-                                data-cost="{{ material.cost_per_unit }}"
-                                data-min-level="{{ material.minimum_level }}">
-                            {{ material.name }} - {{ material.category or 'General' }} ({{ material.unit }})
-                        </option>
-                        {% endfor %}
+                        ${materialOptions}
                     </select>
                 </td>
                 <td>
