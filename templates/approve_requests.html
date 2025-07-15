@@ -4,27 +4,28 @@
 
 {% block content %}
 <style>
-    /* Force table headers to be visible */
+    /* Force table headers to be visible with black text */
     .table thead th, 
     .table-dark th,
     .table thead td,
     .table-dark td {
-        background-color: #212529 !important;
-        color: #ffffff !important;
-        border-color: #454d55 !important;
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
+        border-color: #dee2e6 !important;
         font-weight: 600 !important;
     }
     
     /* Override any theme styles */
     .table th {
-        background-color: #212529 !important;
-        color: #ffffff !important;
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
     }
     
     /* Ensure visibility in all contexts */
     th, .table th {
-        color: #ffffff !important;
-        background-color: #212529 !important;
+        color: #000000 !important;
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
     }
 </style>
 <div class="container-fluid">
