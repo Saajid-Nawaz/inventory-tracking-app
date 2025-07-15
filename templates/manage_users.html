@@ -135,9 +135,20 @@ function editUser(id, username, role, siteId, isActive) {
 }
 
 function confirmDelete(id, username) {
-    if (confirm(`Are you sure you want to delete user "${username}"?`)) {
-        // Implementation for deleting user
-        console.log('Delete user:', id);
+    if (confirm(`Are you sure you want to delete user "${username}"?\n\nThis action cannot be undone.`)) {
+        // Create a form and submit it to delete the user
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("delete_user") }}';
+        
+        const userIdInput = document.createElement('input');
+        userIdInput.type = 'hidden';
+        userIdInput.name = 'user_id';
+        userIdInput.value = id;
+        
+        form.appendChild(userIdInput);
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>

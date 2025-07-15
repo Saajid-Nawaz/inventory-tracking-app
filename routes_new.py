@@ -274,6 +274,67 @@ def add_user():
     return redirect(url_for('manage_users'))
 
 
+@app.route('/edit_user', methods=['POST'])
+@login_required
+def edit_user():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        user_id = request.form.get('user_id')
+        user = User.query.get_or_404(user_id)
+        
+        user.username = request.form.get('username', user.username)
+        user.role = request.form.get('role', user.role)
+        user.assigned_site_id = request.form.get('assigned_site_id') if request.form.get('assigned_site_id') else None
+        user.is_active = bool(request.form.get('is_active'))
+        
+        # Update password if provided
+        if request.form.get('password'):
+            user.set_password(request.form.get('password'))
+        
+        db.session.commit()
+        flash(f'User {user.username} updated successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error updating user: {str(e)}")
+        flash('Error updating user', 'error')
+    
+    return redirect(url_for('manage_users'))
+
+
+@app.route('/delete_user', methods=['POST'])
+@login_required
+def delete_user():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        user_id = request.form.get('user_id')
+        user = User.query.get_or_404(user_id)
+        
+        # Don't allow deletion of current user
+        if user.id == current_user.id:
+            flash('Cannot delete your own account', 'error')
+            return redirect(url_for('manage_users'))
+        
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'User {username} deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting user: {str(e)}")
+        flash('Error deleting user', 'error')
+    
+    return redirect(url_for('manage_users'))
+
+
 @app.route('/add_site', methods=['POST'])
 @login_required
 def add_site():
