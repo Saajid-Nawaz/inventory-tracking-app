@@ -128,6 +128,32 @@
     </div>
 </div>
 
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This action cannot be undone.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" method="POST" action="{{ url_for('delete_user') }}" style="display: inline;">
+                    <input type="hidden" name="user_id" id="deleteUserId">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function editUser(id, username, role, siteId, isActive) {
     // Implementation for editing user
@@ -135,21 +161,13 @@ function editUser(id, username, role, siteId, isActive) {
 }
 
 function confirmDelete(id, username) {
-    if (confirm(`Are you sure you want to delete user "${username}"?\n\nThis action cannot be undone.`)) {
-        // Create a form and submit it to delete the user
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ url_for("delete_user") }}';
-        
-        const userIdInput = document.createElement('input');
-        userIdInput.type = 'hidden';
-        userIdInput.name = 'user_id';
-        userIdInput.value = id;
-        
-        form.appendChild(userIdInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
+    // Set the user details in the modal
+    document.getElementById('deleteUserName').textContent = username;
+    document.getElementById('deleteUserId').value = id;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    modal.show();
 }
 </script>
 {% endblock %}
