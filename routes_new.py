@@ -958,6 +958,7 @@ def approve_requests():
     
     # Get pending stock transfer requests
     transfer_requests = StockTransferRequest.query.filter_by(status='pending').all()
+    logging.info(f"Found {len(transfer_requests)} pending transfer requests")
     
     # Get recent decisions
     recent_individual = IssueRequest.query.filter(
