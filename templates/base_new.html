@@ -509,8 +509,17 @@
                             return data.text;
                         }
                         
-                        // Create highlighted search results
-                        const $result = $('<div>').text(data.text);
+                        const $result = $('<div>');
+                        const text = data.text || '';
+                        
+                        // Split by ' - ' to get name and category
+                        const parts = text.split(' - ');
+                        if (parts.length >= 2) {
+                            $result.append($('<div>').addClass('fw-bold').text(parts[0]));
+                            $result.append($('<small>').addClass('text-muted d-block').text(parts[1]));
+                        } else {
+                            $result.text(text);
+                        }
                         
                         // Add material info if available
                         if (data.element && data.element.dataset) {
@@ -532,6 +541,11 @@
                         return $result;
                     },
                     templateSelection: function(data) {
+                        if (data.id) {
+                            const text = data.text || '';
+                            const parts = text.split(' - ');
+                            return parts[0] || text; // Show only material name in selection
+                        }
                         return data.text;
                     }
                 });

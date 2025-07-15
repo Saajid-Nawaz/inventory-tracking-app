@@ -170,15 +170,41 @@ function addMaterialRow() {
     `;
     
     container.appendChild(newRow);
-    materialRowCount++;
     
-    // Initialize Select2 for the new dropdown
+    // Initialize Select2 for the new dropdown BEFORE incrementing counter
     const newSelect = newRow.querySelector('select');
     $(newSelect).select2({
         placeholder: 'Search materials...',
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        templateResult: function(data) {
+            if (data.loading) return data.text;
+            
+            const $result = $('<div>');
+            const text = data.text || '';
+            
+            // Split by ' - ' to get name and category
+            const parts = text.split(' - ');
+            if (parts.length >= 2) {
+                $result.append($('<div>').addClass('fw-bold').text(parts[0]));
+                $result.append($('<small>').addClass('text-muted d-block').text(parts[1]));
+            } else {
+                $result.text(text);
+            }
+            
+            return $result;
+        },
+        templateSelection: function(data) {
+            if (data.id) {
+                const text = data.text || '';
+                const parts = text.split(' - ');
+                return parts[0] || text; // Show only material name in selection
+            }
+            return data.text;
+        }
     });
+    
+    materialRowCount++;
     
     // Add event listeners to the new row
     setupMaterialRowEvents(newRow);
@@ -223,6 +249,47 @@ function setupMaterialRowEvents(row) {
 // Initialize existing rows
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.material-row').forEach(setupMaterialRowEvents);
+    
+    // Initialize Select2 for existing dropdowns
+    $('select[name*="material_id"]').each(function() {
+        const $select = $(this);
+        
+        // Skip if already initialized
+        if ($select.data('select2')) {
+            return;
+        }
+        
+        $select.select2({
+            placeholder: 'Search materials...',
+            allowClear: true,
+            width: '100%',
+            templateResult: function(data) {
+                if (data.loading) return data.text;
+                
+                const $result = $('<div>');
+                const text = data.text || '';
+                
+                // Split by ' - ' to get name and category
+                const parts = text.split(' - ');
+                if (parts.length >= 2) {
+                    $result.append($('<div>').addClass('fw-bold').text(parts[0]));
+                    $result.append($('<small>').addClass('text-muted d-block').text(parts[1]));
+                } else {
+                    $result.text(text);
+                }
+                
+                return $result;
+            },
+            templateSelection: function(data) {
+                if (data.id) {
+                    const text = data.text || '';
+                    const parts = text.split(' - ');
+                    return parts[0] || text; // Show only material name in selection
+                }
+                return data.text;
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
