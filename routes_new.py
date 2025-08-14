@@ -49,7 +49,7 @@ def get_material_categories():
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # type: ignore
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -399,6 +399,10 @@ def edit_site():
     
     try:
         site = Site.query.get(request.form['site_id'])
+        if not site:
+            flash('Site not found', 'error')
+            return redirect(url_for('manage_sites'))
+            
         site.name = request.form['name']
         site.location = request.form.get('location')
         site.updated_at = datetime.utcnow()
@@ -433,6 +437,10 @@ def edit_material():
     
     try:
         material = Material.query.get(request.form['material_id'])
+        if not material:
+            flash('Material not found', 'error')
+            return redirect(url_for('materials'))
+            
         material.name = request.form['name']
         material.sku = request.form['sku']
         material.category = request.form.get('category')
@@ -855,7 +863,8 @@ def upload_materials_excel():
         for index, row in df.iterrows():
             try:
                 # Skip empty rows
-                if pd.isna(row['Material Name']) or row['Material Name'].strip() == '':
+                material_name_val = row.get('Material Name')
+                if pd.isna(material_name_val) or not str(material_name_val).strip():
                     continue
                 
                 material_name = str(row['Material Name']).strip()
@@ -1124,9 +1133,19 @@ def process_individual_request():
         return redirect(url_for('index'))
     
     try:
-        request_id = int(request.form.get('request_id'))
+        request_id_str = request.form.get('request_id')
         action = request.form.get('action')
         review_notes = request.form.get('review_notes')
+        
+        if not request_id_str or not action:
+            flash('Missing required fields', 'error')
+            return redirect(url_for('approve_requests'))
+        
+        try:
+            request_id = int(request_id_str)
+        except (ValueError, TypeError):
+            flash('Invalid request ID', 'error')
+            return redirect(url_for('approve_requests'))
         
         InventoryService.process_issue_request(
             request_id=request_id,
@@ -1155,6 +1174,10 @@ def process_batch_request():
         batch_id = request.form.get('batch_id')
         action = request.form.get('action')
         review_notes = request.form.get('review_notes')
+        
+        if not batch_id or not action:
+            flash('Missing required fields', 'error')
+            return redirect(url_for('approve_requests'))
         
         InventoryService.process_batch_issue_request(
             batch_id=batch_id,
@@ -1397,9 +1420,13 @@ def process_receive_material():
     
     try:
         site_id = current_user.assigned_site_id
-        material_id = int(request.form.get('material_id'))
-        quantity = float(request.form.get('quantity'))
-        unit_cost = float(request.form.get('unit_cost'))
+        try:
+            material_id = int(request.form.get('material_id', 0))
+            quantity = float(request.form.get('quantity', 0))
+            unit_cost = float(request.form.get('unit_cost', 0))
+        except (ValueError, TypeError):
+            flash('Invalid input values', 'error')
+            return redirect(url_for('receive_materials'))
         project_code = request.form.get('project_code')
         notes = request.form.get('notes')
         
@@ -1472,8 +1499,12 @@ def submit_material_request():
     
     try:
         site_id = current_user.assigned_site_id
-        material_id = int(request.form.get('material_id'))
-        quantity_requested = float(request.form.get('quantity_requested'))
+        try:
+            material_id = int(request.form.get('material_id', 0))
+            quantity_requested = float(request.form.get('quantity_requested', 0))
+        except (ValueError, TypeError):
+            flash('Invalid input values', 'error')
+            return redirect(url_for('request_materials'))
         project_code = request.form.get('project_code')
         purpose = request.form.get('purpose')
         
@@ -1924,6 +1955,10 @@ def process_transfer_request():
         action = request.form.get('action')
         review_notes = request.form.get('review_notes')
         
+        if not action:
+            flash('Missing required action', 'error')
+            return redirect(url_for('approve_requests'))
+        
         InventoryService.process_stock_transfer_request(
             transfer_id=transfer_id,
             approved_by=current_user.id,
@@ -1950,8 +1985,12 @@ def stock_transfer():
     
     if request.method == 'POST':
         try:
-            from_site_id = int(request.form.get('from_site_id'))
-            to_site_id = int(request.form.get('to_site_id'))
+            try:
+                from_site_id = int(request.form.get('from_site_id', 0))
+                to_site_id = int(request.form.get('to_site_id', 0))
+            except (ValueError, TypeError):
+                flash('Invalid site selection', 'error')
+                return redirect(url_for('stock_transfer'))
             priority = request.form.get('priority', 'normal')
             reason = request.form.get('reason')
             
@@ -2044,8 +2083,12 @@ def process_stock_adjustment():
     
     try:
         site_id = current_user.assigned_site_id
-        material_id = int(request.form.get('material_id'))
-        physical_count = float(request.form.get('physical_count'))
+        try:
+            material_id = int(request.form.get('material_id', 0))
+            physical_count = float(request.form.get('physical_count', 0))
+        except (ValueError, TypeError):
+            flash('Invalid input values', 'error')
+            return redirect(url_for('stock_adjustments'))
         reason = request.form.get('reason')
         notes = request.form.get('notes', '')
         
