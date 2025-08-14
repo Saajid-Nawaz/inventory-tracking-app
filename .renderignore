@@ -1,0 +1,48 @@
+# Development files
+*.pyc
+__pycache__/
+.env
+.env.local
+.env.development
+.env.test
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+!RENDER_DEPLOYMENT_GUIDE.md
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Development tools
+.replit
+replit.nix
+
+# Local data
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/

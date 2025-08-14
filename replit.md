@@ -22,6 +22,8 @@ The application employs a traditional three-tier architecture:
 -   **Advanced Transaction System**: All inventory movements are tracked with unique serial numbers and a complete audit trail.
 -   **Modern Dashboard UI**: Redesigned UI with card-based layouts, advanced animations, and responsive design.
 -   **Comprehensive Material Catalog**: Includes material categorization and an extensive database of construction materials with standardized units and specifications.
+-   **Professional Report System**: Enhanced PDF and Excel reports with company branding, consistent styling, and comprehensive data presentation.
+-   **Render Deployment Ready**: Fully configured for deployment to Render cloud platform with PostgreSQL database integration.
 
 ### Key Components
 -   **Flask Application**: Main application configuration, database initialization, file upload, and session management.
@@ -30,7 +32,9 @@ The application employs a traditional three-tier architecture:
 -   **OCR Processor**: Integrates Tesseract for text extraction and pattern matching from images.
 -   **Excel Manager**: Manages Excel file operations for import/export.
 -   **Inventory Service Layer**: Centralized business logic for all inventory operations, including FIFO calculations.
--   **Report Generation Service**: Automated PDF and Excel report generation.
+-   **Report Generation Service**: Automated PDF and Excel report generation with professional company branding.
+-   **Enhanced Professional Reports**: Professional report generator with company branding, modern styling, and comprehensive data presentation.
+-   **Deployment Configuration**: Complete Render deployment setup with gunicorn, PostgreSQL integration, and production optimizations.
 
 ## External Dependencies
 ### Python Packages
