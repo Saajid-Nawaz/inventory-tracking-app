@@ -279,11 +279,11 @@
                         <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
                             <div>
                                 <small class="fw-bold">{{ transaction.material.name if transaction.material else 'Unknown' }}</small>
-                                <br><small class="text-muted">{{ transaction.transaction_type.title() }}</small>
+                                <br><small class="text-muted">{{ transaction.type.title() if transaction.type else 'Transaction' }}</small>
                             </div>
                             <div class="text-end">
                                 <small class="fw-bold">{{ transaction.quantity }}</small>
-                                <br><small class="text-muted">{{ transaction.timestamp.strftime('%m/%d') }}</small>
+                                <br><small class="text-muted">{{ transaction.created_at.strftime('%m/%d') if transaction.created_at else 'N/A' }}</small>
                             </div>
                         </div>
                         {% endfor %}

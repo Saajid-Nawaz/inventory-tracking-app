@@ -221,13 +221,13 @@ def site_engineer_dashboard():
     # Get today's activity
     today = datetime.now().date()
     today_receipts = Transaction.query.filter(
-        Transaction.transaction_type == 'receive',
-        func.date(Transaction.timestamp) == today
+        Transaction.type == 'receive',
+        func.date(Transaction.created_at) == today
     ).count()
     
     today_issues = Transaction.query.filter(
-        Transaction.transaction_type == 'issue',
-        func.date(Transaction.timestamp) == today
+        Transaction.type == 'issue',
+        func.date(Transaction.created_at) == today
     ).count()
     
     return render_template('site_engineer_dashboard.html',

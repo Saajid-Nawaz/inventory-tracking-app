@@ -327,13 +327,13 @@
                             {% for transaction in recent_transactions[:10] %}
                             <tr>
                                 <td>
-                                    <div class="fw-bold">{{ transaction.timestamp.strftime('%m/%d/%Y') }}</div>
-                                    <small class="text-muted">{{ transaction.timestamp.strftime('%I:%M %p') }}</small>
+                                    <div class="fw-bold">{{ transaction.created_at.strftime('%m/%d/%Y') if transaction.created_at else 'N/A' }}</div>
+                                    <small class="text-muted">{{ transaction.created_at.strftime('%I:%M %p') if transaction.created_at else 'N/A' }}</small>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if transaction.transaction_type == 'receive' else 'primary' if transaction.transaction_type == 'issue' else 'warning' }}">
-                                        <i class="fas fa-{{ 'plus' if transaction.transaction_type == 'receive' else 'minus' if transaction.transaction_type == 'issue' else 'exchange-alt' }} me-1"></i>
-                                        {{ transaction.transaction_type.title() }}
+                                    <span class="badge bg-{{ 'success' if transaction.type == 'receive' else 'primary' if transaction.type == 'issue' else 'warning' }}">
+                                        <i class="fas fa-{{ 'plus' if transaction.type == 'receive' else 'minus' if transaction.type == 'issue' else 'exchange-alt' }} me-1"></i>
+                                        {{ transaction.type.title() if transaction.type else 'Transaction' }}
                                     </span>
                                 </td>
                                 <td>
@@ -347,7 +347,7 @@
                                     <small class="text-muted">{{ transaction.material.unit if transaction.material else '' }}</small>
                                 </td>
                                 <td>{{ transaction.site.name if transaction.site else 'N/A' }}</td>
-                                <td>{{ transaction.user.username if transaction.user else 'System' }}</td>
+                                <td>{{ transaction.creator_user.username if transaction.creator_user else 'System' }}</td>
                                 <td>
                                     {% if transaction.unit_cost %}
                                     ZMW {{ "%.2f"|format(transaction.quantity * transaction.unit_cost) }}
