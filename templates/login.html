@@ -1,16 +1,13 @@
-{% extends "base.html" %}
+{% extends "base_deploy.html" %}
 
-{% block title %}Login - Construction Site Material Tracker{% endblock %}
+{% block title %}Login - Construction Material Tracker{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6">
         <div class="card">
-            <div class="card-header text-center">
-                <h4 class="mb-0">
-                    <i class="fas fa-sign-in-alt me-2"></i>
-                    Login
-                </h4>
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Login</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -18,49 +15,31 @@
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
-                    
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-sign-in-alt me-2"></i>
-                        Login
+                        <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                 </form>
-                
-                <hr>
-                
-                <div class="text-center">
-                    <h6 class="text-muted">Demo Accounts:</h6>
-                    {% if demo_accounts %}
-                    <div class="small text-muted">
-                        {% for account in demo_accounts %}
-                        <div class="mb-2">
-                            <strong>{{ account.role }}:</strong><br>
-                            {{ account.username }} / {{ account.password }}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
+
+                <div class="mt-4">
+                    <h6>Demo Accounts:</h6>
                     <div class="row">
                         <div class="col-6">
                             <small class="text-muted">
                                 <strong>Site Engineer:</strong><br>
-                                Username: engineer1<br>
-                                Password: engineer123
+                                engineer1 / engineer123
                             </small>
                         </div>
                         <div class="col-6">
                             <small class="text-muted">
                                 <strong>Storesman:</strong><br>
-                                Username: storesman1<br>
-                                Password: store123
+                                storesman1 / store123
                             </small>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
