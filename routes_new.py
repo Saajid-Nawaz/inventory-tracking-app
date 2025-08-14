@@ -518,7 +518,7 @@ def material_management():
     
     materials = Material.query.all()
     total_materials = len(materials)
-    active_materials = len([m for m in materials if m.is_active])
+    active_materials = total_materials  # All materials are considered active since no is_active field exists
     
     return render_template('material_management.html', 
                          materials=materials, 
