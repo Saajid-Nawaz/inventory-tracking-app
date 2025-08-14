@@ -263,96 +263,97 @@
 
 <!-- Main Content Row -->
 <div class="row g-4">
-    <!-- Stock Levels Table -->
+    <!-- Stock Levels Grid -->
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-bottom py-3">
+            <div class="card-header bg-gradient-info text-white border-0 py-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <div class="bg-info bg-opacity-10 rounded-2 p-2 me-3">
-                            <i class="fas fa-warehouse text-info"></i>
+                        <div class="bg-white bg-opacity-25 rounded-3 p-3 me-3">
+                            <i class="fas fa-warehouse fa-lg text-white"></i>
                         </div>
-                        <h5 class="mb-0 fw-bold">Current Stock Levels</h5>
+                        <div>
+                            <h5 class="mb-0 fw-bold text-white">Current Stock Levels</h5>
+                            <small class="text-white opacity-75">Real-time inventory monitoring</small>
+                        </div>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-primary active" onclick="filterStock('all')">All</button>
-                        <button class="btn btn-outline-warning" onclick="filterStock('low')">Low Stock</button>
-                        <button class="btn btn-outline-danger" onclick="filterStock('critical')">Critical</button>
+                        <button class="btn btn-light btn-sm active" onclick="filterStock('all')">All Items</button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="filterStock('low')">Low Stock</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="filterStock('critical')">Critical</button>
                     </div>
                 </div>
             </div>
             <div class="card-body p-0">
                 {% if stock_levels %}
-                <div class="table-responsive" style="max-height: 500px;">
-                    <table class="table table-hover mb-0" id="stockTable">
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th class="px-4 py-3 border-0">Material</th>
-                                <th class="px-3 py-3 border-0">Category</th>
-                                <th class="px-3 py-3 border-0">Current</th>
-                                <th class="px-3 py-3 border-0">Min Level</th>
-                                <th class="px-3 py-3 border-0">Status</th>
-                                <th class="px-3 py-3 border-0">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for stock in stock_levels %}
-                            <tr class="stock-row" 
-                                data-stock-level="{{ 'low' if stock.material and stock.quantity <= stock.material.minimum_level else 'normal' }}"
-                                data-critical="{{ 'true' if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) else 'false' }}">
-                                <td class="px-4 py-3">
-                                    <div class="fw-bold text-dark">{{ stock.material.name if stock.material else 'Unknown' }}</div>
-                                    {% if stock.material and stock.material.description %}
-                                    <small class="text-muted">{{ stock.material.description[:50] }}{% if stock.material.description|length > 50 %}...{% endif %}</small>
-                                    {% endif %}
-                                </td>
-                                <td class="px-3 py-3">
-                                    <span class="badge bg-light text-dark border">{{ stock.material.category if stock.material else 'N/A' }}</span>
-                                </td>
-                                <td class="px-3 py-3">
-                                    <div class="fw-bold {% if stock.material and stock.quantity <= stock.material.minimum_level %}text-danger{% endif %}">
-                                        {{ stock.quantity }} {{ stock.material.unit if stock.material else '' }}
+                <!-- Stock Items Grid -->
+                <div class="row g-3 p-4" id="stockGrid">
+                    {% for stock in stock_levels %}
+                    <div class="col-lg-6 col-md-6 stock-item" 
+                         data-stock-level="{{ 'low' if stock.material and stock.quantity <= stock.material.minimum_level else 'normal' }}"
+                         data-critical="{{ 'true' if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) else 'false' }}">
+                        <div class="card border-0 shadow-sm h-100 {% if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) %}border-danger{% elif stock.material and stock.quantity <= stock.material.minimum_level %}border-warning{% endif %}">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold text-dark mb-1">{{ stock.material.name if stock.material else 'Unknown' }}</h6>
+                                        <span class="badge bg-light text-dark border small">{{ stock.material.category if stock.material else 'N/A' }}</span>
                                     </div>
-                                </td>
-                                <td class="px-3 py-3">
-                                    <div class="text-muted">{{ stock.material.minimum_level if stock.material else 'N/A' }}</div>
-                                </td>
-                                <td class="px-3 py-3">
-                                    {% if stock.material %}
-                                        {% if stock.quantity <= (stock.material.minimum_level * 0.5) %}
-                                        <span class="badge bg-danger">Critical</span>
-                                        {% elif stock.quantity <= stock.material.minimum_level %}
-                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                    <div class="text-end">
+                                        {% if stock.material %}
+                                            {% if stock.quantity <= (stock.material.minimum_level * 0.5) %}
+                                            <span class="badge bg-danger">Critical</span>
+                                            {% elif stock.quantity <= stock.material.minimum_level %}
+                                            <span class="badge bg-warning text-dark">Low</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Normal</span>
+                                            {% endif %}
                                         {% else %}
-                                        <span class="badge bg-success">Normal</span>
+                                        <span class="badge bg-secondary">Unknown</span>
                                         {% endif %}
-                                    {% else %}
-                                    <span class="badge bg-secondary">Unknown</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-3 py-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('receive_materials', material_id=stock.material.id) }}" 
-                                           class="btn btn-outline-success btn-sm" title="Receive">
-                                            <i class="fas fa-plus"></i>
-                                        </a>
-                                        <a href="{{ url_for('request_materials', material_id=stock.material.id) }}" 
-                                           class="btn btn-outline-primary btn-sm" title="Request">
-                                            <i class="fas fa-minus"></i>
-                                        </a>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </div>
+                                
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                                            <div class="h5 mb-0 fw-bold {% if stock.material and stock.quantity <= stock.material.minimum_level %}text-danger{% else %}text-primary{% endif %}">
+                                                {{ stock.quantity }}
+                                            </div>
+                                            <small class="text-muted">Current</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="bg-secondary bg-opacity-10 rounded-3 p-2">
+                                            <div class="h5 mb-0 fw-bold text-secondary">{{ stock.material.minimum_level if stock.material else 'N/A' }}</div>
+                                            <small class="text-muted">Min Level</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('receive_materials', material_id=stock.material.id) }}" 
+                                       class="btn btn-success btn-sm flex-fill">
+                                        <i class="fas fa-plus me-1"></i>Receive
+                                    </a>
+                                    <a href="{{ url_for('request_materials', material_id=stock.material.id) }}" 
+                                       class="btn btn-primary btn-sm flex-fill">
+                                        <i class="fas fa-minus me-1"></i>Request
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% else %}
                 <div class="text-center py-5">
-                    <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
-                    <h6 class="text-muted">No stock data available</h6>
-                    <p class="text-muted">Start by receiving some materials</p>
-                    <a href="{{ url_for('receive_materials') }}" class="btn btn-primary">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-4 d-inline-flex mb-3">
+                        <i class="fas fa-boxes fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="text-dark mb-2">No Stock Data Available</h5>
+                    <p class="text-muted mb-4">Start by receiving some materials to track inventory</p>
+                    <a href="{{ url_for('receive_materials') }}" class="btn btn-primary btn-lg">
                         <i class="fas fa-plus me-2"></i>Receive Materials
                     </a>
                 </div>
@@ -361,61 +362,100 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Enhanced Sidebar -->
     <div class="col-lg-4">
-        <!-- Recent Activity -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-bottom py-3">
+        <!-- Live Activity Feed -->
+        <div class="card border-0 shadow-lg mb-4 bg-gradient">
+            <div class="card-header bg-gradient-secondary text-white border-0 py-3">
                 <div class="d-flex align-items-center">
-                    <div class="bg-secondary bg-opacity-10 rounded-2 p-2 me-3">
-                        <i class="fas fa-history text-secondary"></i>
+                    <div class="bg-white bg-opacity-25 rounded-2 p-2 me-3">
+                        <i class="fas fa-pulse text-white"></i>
                     </div>
-                    <h6 class="mb-0 fw-bold">Recent Activity</h6>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-white">Live Activity Feed</h6>
+                        <small class="text-white opacity-75">Recent transactions</small>
+                    </div>
                 </div>
             </div>
-            <div class="card-body p-3">
+            <div class="card-body p-0">
                 {% if recent_transactions %}
+                <div class="timeline">
                     {% for transaction in recent_transactions[:5] %}
-                    <div class="d-flex align-items-center p-3 bg-light rounded-3 mb-2">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="bg-white rounded-2 p-2">
-                                <i class="fas fa-{{ 'plus text-success' if transaction.type == 'receive' else 'minus text-primary' if transaction.type == 'issue' else 'exchange-alt text-warning' }}"></i>
+                    <div class="timeline-item p-3 border-bottom">
+                        <div class="d-flex align-items-start">
+                            <div class="timeline-marker me-3">
+                                <div class="bg-{{ 'success' if transaction.type == 'receive' else 'primary' if transaction.type == 'issue' else 'warning' }} rounded-circle p-2">
+                                    <i class="fas fa-{{ 'plus' if transaction.type == 'receive' else 'minus' if transaction.type == 'issue' else 'exchange-alt' }} text-white small"></i>
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-bold small">{{ transaction.material.name if transaction.material else 'Unknown' }}</div>
-                            <div class="text-muted small">{{ transaction.type.title() if transaction.type else 'Transaction' }} • {{ transaction.quantity }}</div>
-                        </div>
-                        <div class="text-end">
-                            <small class="text-muted">{{ transaction.created_at.strftime('%m/%d') if transaction.created_at else 'N/A' }}</small>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold mb-1 small">{{ transaction.material.name if transaction.material else 'Unknown' }}</h6>
+                                        <p class="text-muted small mb-1">
+                                            {{ transaction.type.title() if transaction.type else 'Transaction' }} 
+                                            <span class="fw-bold text-dark">{{ transaction.quantity }}</span>
+                                            {{ transaction.material.unit if transaction.material else '' }}
+                                        </p>
+                                        <small class="text-muted">{{ transaction.created_at.strftime('%I:%M %p') if transaction.created_at else 'N/A' }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ transaction.created_at.strftime('%m/%d') if transaction.created_at else 'N/A' }}</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
                 {% else %}
-                <div class="text-center py-3">
-                    <i class="fas fa-history fa-2x text-muted mb-2"></i>
-                    <p class="text-muted small mb-0">No recent activity</p>
+                <div class="text-center py-4">
+                    <div class="bg-secondary bg-opacity-10 rounded-circle p-3 d-inline-flex mb-2">
+                        <i class="fas fa-history fa-2x text-secondary"></i>
+                    </div>
+                    <p class="text-muted mb-0">No recent activity</p>
+                    <small class="text-muted">Transactions will appear here</small>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Stock Status Chart -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-bottom py-3">
+        <!-- Interactive Stock Analytics -->
+        <div class="card border-0 shadow-lg bg-gradient">
+            <div class="card-header bg-gradient-dark text-white border-0 py-3">
                 <div class="d-flex align-items-center">
-                    <div class="bg-info bg-opacity-10 rounded-2 p-2 me-3">
-                        <i class="fas fa-chart-pie text-info"></i>
+                    <div class="bg-white bg-opacity-25 rounded-2 p-2 me-3">
+                        <i class="fas fa-chart-pie text-white"></i>
                     </div>
-                    <h6 class="mb-0 fw-bold">Stock Overview</h6>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-white">Stock Analytics</h6>
+                        <small class="text-white opacity-75">Real-time insights</small>
+                    </div>
                 </div>
             </div>
             <div class="card-body p-4">
-                <canvas id="stockStatusChart" width="300" height="200"></canvas>
+                <!-- Stock Status Visualization -->
+                <div class="position-relative mb-4" style="height: 200px;">
+                    <canvas id="stockStatusChart" class="w-100"></canvas>
+                </div>
                 
-                <!-- Category Breakdown -->
-                <div class="mt-4">
-                    <h6 class="fw-bold mb-3">Category Breakdown</h6>
+                <!-- Quick Stats Grid -->
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3 text-center">
+                            <div class="h4 mb-0 text-success">{{ normal_stock_count if normal_stock_count is defined else 0 }}</div>
+                            <small class="text-muted fw-medium">Normal</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="bg-danger bg-opacity-10 rounded-3 p-3 text-center">
+                            <div class="h4 mb-0 text-danger">{{ critical_stock_count if critical_stock_count is defined else 0 }}</div>
+                            <small class="text-muted fw-medium">Critical</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Breakdown with Progress Bars -->
+                <div>
+                    <h6 class="fw-bold mb-3 text-dark">Category Distribution</h6>
                     {% set categories = {} %}
                     {% for stock in stock_levels %}
                         {% if stock.material and stock.material.category %}
@@ -423,10 +463,19 @@
                         {% endif %}
                     {% endfor %}
                     
+                    {% set total_items = stock_levels|length %}
                     {% for category, count in categories.items() %}
-                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                        <span class="small fw-medium">{{ category }}</span>
-                        <span class="badge bg-primary">{{ count }}</span>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-medium text-dark">{{ category }}</span>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">{{ count }}</span>
+                                <small class="text-muted">{{ ((count / total_items) * 100)|round|int }}%</small>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" style="width: {{ ((count / total_items) * 100)|round }}%"></div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -493,10 +542,10 @@ function filterStock(filter) {
     document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
     
-    const rows = document.querySelectorAll('.stock-row');
-    rows.forEach(row => {
-        const stockLevel = row.dataset.stockLevel;
-        const isCritical = row.dataset.critical === 'true';
+    const items = document.querySelectorAll('.stock-item');
+    items.forEach(item => {
+        const stockLevel = item.dataset.stockLevel;
+        const isCritical = item.dataset.critical === 'true';
         
         let show = false;
         switch(filter) {
@@ -511,7 +560,12 @@ function filterStock(filter) {
                 break;
         }
         
-        row.style.display = show ? '' : 'none';
+        if (show) {
+            item.style.display = '';
+            item.style.animation = 'slideIn 0.3s ease-out';
+        } else {
+            item.style.display = 'none';
+        }
     });
 }
 
