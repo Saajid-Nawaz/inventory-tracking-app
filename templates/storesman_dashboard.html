@@ -1,4 +1,4 @@
-{% extends "base_deploy.html" %}
+{% extends "base_new.html" %}
 
 {% block title %}Storesman Dashboard{% endblock %}
 
@@ -30,10 +30,8 @@
                 <h5><i class="fas fa-chart-bar"></i> Inventory Summary</h5>
             </div>
             <div class="card-body">
-                {% set total_value = stock_levels|sum(attribute='total_value')|default(0) %}
-                <p><strong>Total Inventory Value:</strong> ZMW {{ "%.2f"|format(total_value) }}</p>
-                {% set low_stock = stock_levels|selectattr('quantity', 'le', stock_levels|selectattr('material', 'defined')|selectattr('material.minimum_level', 'defined')|map(attribute='material.minimum_level')|list|min|default(0))|list %}
-                <p><strong>Low Stock Items:</strong> {{ low_stock|length }}</p>
+                <p><strong>Total Stock Items:</strong> {{ stock_levels|length }}</p>
+                <p><strong>Available Materials:</strong> {{ materials|length }}</p>
                 <p><strong>Last Updated:</strong> Now</p>
             </div>
         </div>
