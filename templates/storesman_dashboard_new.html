@@ -263,97 +263,96 @@
 
 <!-- Main Content Row -->
 <div class="row g-4">
-    <!-- Stock Levels Grid -->
+    <!-- Current Stock Levels Table -->
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-gradient-info text-white border-0 py-4">
+            <div class="card-header bg-white border-bottom py-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <div class="bg-white bg-opacity-25 rounded-3 p-3 me-3">
-                            <i class="fas fa-warehouse fa-lg text-white"></i>
+                        <div class="bg-primary bg-opacity-10 rounded-2 p-2 me-3">
+                            <i class="fas fa-warehouse text-primary"></i>
                         </div>
-                        <div>
-                            <h5 class="mb-0 fw-bold text-white">Current Stock Levels</h5>
-                            <small class="text-white opacity-75">Real-time inventory monitoring</small>
-                        </div>
+                        <h5 class="mb-0 fw-bold">Current Stock Levels</h5>
                     </div>
                     <div class="btn-group btn-group-sm">
-                        <button class="btn btn-light btn-sm active" onclick="filterStock('all')">All Items</button>
-                        <button class="btn btn-outline-warning btn-sm" onclick="filterStock('low')">Low Stock</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="filterStock('critical')">Critical</button>
+                        <button class="btn btn-outline-primary active" id="filterAll">All Items</button>
+                        <button class="btn btn-outline-warning" id="filterLow">Low Stock</button>
+                        <button class="btn btn-outline-danger" id="filterCritical">Critical</button>
                     </div>
                 </div>
             </div>
             <div class="card-body p-0">
                 {% if stock_levels %}
-                <!-- Stock Items Grid -->
-                <div class="row g-3 p-4" id="stockGrid">
-                    {% for stock in stock_levels %}
-                    <div class="col-lg-6 col-md-6 stock-item" 
-                         data-stock-level="{{ 'low' if stock.material and stock.quantity <= stock.material.minimum_level else 'normal' }}"
-                         data-critical="{{ 'true' if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) else 'false' }}">
-                        <div class="card border-0 shadow-sm h-100 {% if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) %}border-danger{% elif stock.material and stock.quantity <= stock.material.minimum_level %}border-warning{% endif %}">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div class="flex-grow-1">
-                                        <h6 class="fw-bold text-dark mb-1">{{ stock.material.name if stock.material else 'Unknown' }}</h6>
-                                        <span class="badge bg-light text-dark border small">{{ stock.material.category if stock.material else 'N/A' }}</span>
+                <div class="table-responsive" style="max-height: 500px;">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="px-4 py-3 border-0">Material</th>
+                                <th class="px-3 py-3 border-0">Category</th>
+                                <th class="px-3 py-3 border-0">Current</th>
+                                <th class="px-3 py-3 border-0">Min Level</th>
+                                <th class="px-3 py-3 border-0">Status</th>
+                                <th class="px-3 py-3 border-0">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in stock_levels %}
+                            <tr class="stock-row" 
+                                data-stock-level="{{ 'low' if stock.material and stock.quantity <= stock.material.minimum_level else 'normal' }}"
+                                data-critical="{{ 'true' if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) else 'false' }}">
+                                <td class="px-4 py-3">
+                                    <div class="fw-bold text-dark">{{ stock.material.name if stock.material else 'Unknown' }}</div>
+                                    {% if stock.material and stock.material.description %}
+                                    <small class="text-muted">{{ stock.material.description[:40] }}{% if stock.material.description|length > 40 %}...{% endif %}</small>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-3">
+                                    <span class="badge bg-light text-dark border">{{ stock.material.category if stock.material else 'N/A' }}</span>
+                                </td>
+                                <td class="px-3 py-3">
+                                    <div class="fw-bold {% if stock.material and stock.quantity <= stock.material.minimum_level %}text-danger{% endif %}">
+                                        {{ stock.quantity }} {{ stock.material.unit if stock.material else '' }}
                                     </div>
-                                    <div class="text-end">
-                                        {% if stock.material %}
-                                            {% if stock.quantity <= (stock.material.minimum_level * 0.5) %}
-                                            <span class="badge bg-danger">Critical</span>
-                                            {% elif stock.quantity <= stock.material.minimum_level %}
-                                            <span class="badge bg-warning text-dark">Low</span>
-                                            {% else %}
-                                            <span class="badge bg-success">Normal</span>
-                                            {% endif %}
+                                </td>
+                                <td class="px-3 py-3">
+                                    <div class="text-muted">{{ stock.material.minimum_level if stock.material else 'N/A' }}</div>
+                                </td>
+                                <td class="px-3 py-3">
+                                    {% if stock.material %}
+                                        {% if stock.quantity <= (stock.material.minimum_level * 0.5) %}
+                                        <span class="badge bg-danger">Critical</span>
+                                        {% elif stock.quantity <= stock.material.minimum_level %}
+                                        <span class="badge bg-warning text-dark">Low Stock</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">Unknown</span>
+                                        <span class="badge bg-success">Normal</span>
                                         {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('receive_materials', material_id=stock.material.id) }}" 
+                                           class="btn btn-outline-success btn-sm" title="Receive">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                        <a href="{{ url_for('request_materials', material_id=stock.material.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" title="Request">
+                                            <i class="fas fa-minus"></i>
+                                        </a>
                                     </div>
-                                </div>
-                                
-                                <div class="row text-center mb-3">
-                                    <div class="col-6">
-                                        <div class="bg-primary bg-opacity-10 rounded-3 p-2">
-                                            <div class="h5 mb-0 fw-bold {% if stock.material and stock.quantity <= stock.material.minimum_level %}text-danger{% else %}text-primary{% endif %}">
-                                                {{ stock.quantity }}
-                                            </div>
-                                            <small class="text-muted">Current</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="bg-secondary bg-opacity-10 rounded-3 p-2">
-                                            <div class="h5 mb-0 fw-bold text-secondary">{{ stock.material.minimum_level if stock.material else 'N/A' }}</div>
-                                            <small class="text-muted">Min Level</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="d-flex gap-2">
-                                    <a href="{{ url_for('receive_materials', material_id=stock.material.id) }}" 
-                                       class="btn btn-success btn-sm flex-fill">
-                                        <i class="fas fa-plus me-1"></i>Receive
-                                    </a>
-                                    <a href="{{ url_for('request_materials', material_id=stock.material.id) }}" 
-                                       class="btn btn-primary btn-sm flex-fill">
-                                        <i class="fas fa-minus me-1"></i>Request
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
                 {% else %}
                 <div class="text-center py-5">
-                    <div class="bg-primary bg-opacity-10 rounded-circle p-4 d-inline-flex mb-3">
-                        <i class="fas fa-boxes fa-3x text-primary"></i>
-                    </div>
-                    <h5 class="text-dark mb-2">No Stock Data Available</h5>
-                    <p class="text-muted mb-4">Start by receiving some materials to track inventory</p>
-                    <a href="{{ url_for('receive_materials') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">No stock data available</h6>
+                    <p class="text-muted">Start by receiving some materials</p>
+                    <a href="{{ url_for('receive_materials') }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>Receive Materials
                     </a>
                 </div>
@@ -418,66 +417,98 @@
             </div>
         </div>
 
-        <!-- Interactive Stock Analytics -->
-        <div class="card border-0 shadow-lg bg-gradient">
-            <div class="card-header bg-gradient-dark text-white border-0 py-3">
+        <!-- Stock Analytics Table -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
                 <div class="d-flex align-items-center">
-                    <div class="bg-white bg-opacity-25 rounded-2 p-2 me-3">
-                        <i class="fas fa-chart-pie text-white"></i>
+                    <div class="bg-info bg-opacity-10 rounded-2 p-2 me-3">
+                        <i class="fas fa-chart-pie text-info"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold text-white">Stock Analytics</h6>
-                        <small class="text-white opacity-75">Real-time insights</small>
-                    </div>
+                    <h6 class="mb-0 fw-bold">Stock Analytics</h6>
                 </div>
             </div>
-            <div class="card-body p-4">
-                <!-- Stock Status Visualization -->
-                <div class="position-relative mb-4" style="height: 200px;">
-                    <canvas id="stockStatusChart" class="w-100"></canvas>
+            <div class="card-body p-0">
+                <!-- Quick Stats -->
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-3 py-2 border-0">Status</th>
+                                <th class="px-3 py-2 border-0">Count</th>
+                                <th class="px-3 py-2 border-0">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="px-3 py-2">
+                                    <span class="badge bg-success">Normal</span>
+                                </td>
+                                <td class="px-3 py-2 fw-bold">{{ normal_stock_count if normal_stock_count is defined else 0 }}</td>
+                                <td class="px-3 py-2">
+                                    {% set total = stock_levels|length %}
+                                    {% if total > 0 %}
+                                    {{ ((normal_stock_count / total) * 100)|round|int }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 py-2">
+                                    <span class="badge bg-warning text-dark">Low Stock</span>
+                                </td>
+                                <td class="px-3 py-2 fw-bold">{{ low_stock_count if low_stock_count is defined else 0 }}</td>
+                                <td class="px-3 py-2">
+                                    {% if total > 0 %}
+                                    {{ ((low_stock_count / total) * 100)|round|int }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 py-2">
+                                    <span class="badge bg-danger">Critical</span>
+                                </td>
+                                <td class="px-3 py-2 fw-bold">{{ critical_stock_count if critical_stock_count is defined else 0 }}</td>
+                                <td class="px-3 py-2">
+                                    {% if total > 0 %}
+                                    {{ ((critical_stock_count / total) * 100)|round|int }}%
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 
-                <!-- Quick Stats Grid -->
-                <div class="row g-2 mb-4">
-                    <div class="col-6">
-                        <div class="bg-success bg-opacity-10 rounded-3 p-3 text-center">
-                            <div class="h4 mb-0 text-success">{{ normal_stock_count if normal_stock_count is defined else 0 }}</div>
-                            <small class="text-muted fw-medium">Normal</small>
-                        </div>
+                <!-- Category Breakdown -->
+                <div class="border-top">
+                    <div class="px-3 py-2 bg-light border-bottom">
+                        <h6 class="mb-0 small fw-bold">Category Breakdown</h6>
                     </div>
-                    <div class="col-6">
-                        <div class="bg-danger bg-opacity-10 rounded-3 p-3 text-center">
-                            <div class="h4 mb-0 text-danger">{{ critical_stock_count if critical_stock_count is defined else 0 }}</div>
-                            <small class="text-muted fw-medium">Critical</small>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                {% set categories = {} %}
+                                {% for stock in stock_levels %}
+                                    {% if stock.material and stock.material.category %}
+                                        {% set _ = categories.update({stock.material.category: categories.get(stock.material.category, 0) + 1}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% for category, count in categories.items() %}
+                                <tr>
+                                    <td class="px-3 py-2">{{ category }}</td>
+                                    <td class="px-3 py-2 text-end">
+                                        <span class="badge bg-primary">{{ count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                
-                <!-- Category Breakdown with Progress Bars -->
-                <div>
-                    <h6 class="fw-bold mb-3 text-dark">Category Distribution</h6>
-                    {% set categories = {} %}
-                    {% for stock in stock_levels %}
-                        {% if stock.material and stock.material.category %}
-                            {% set _ = categories.update({stock.material.category: categories.get(stock.material.category, 0) + 1}) %}
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% set total_items = stock_levels|length %}
-                    {% for category, count in categories.items() %}
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small fw-medium text-dark">{{ category }}</span>
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-primary me-2">{{ count }}</span>
-                                <small class="text-muted">{{ ((count / total_items) * 100)|round|int }}%</small>
-                            </div>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-primary" style="width: {{ ((count / total_items) * 100)|round }}%"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -537,37 +568,58 @@
 
 {% block extra_js %}
 <script>
-function filterStock(filter) {
-    // Update active button
-    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    const filterAll = document.getElementById('filterAll');
+    const filterLow = document.getElementById('filterLow');
+    const filterCritical = document.getElementById('filterCritical');
     
-    const items = document.querySelectorAll('.stock-item');
-    items.forEach(item => {
-        const stockLevel = item.dataset.stockLevel;
-        const isCritical = item.dataset.critical === 'true';
+    function filterStock(filter, activeButton) {
+        // Update active button
+        document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+        activeButton.classList.add('active');
         
-        let show = false;
-        switch(filter) {
-            case 'all':
-                show = true;
-                break;
-            case 'low':
-                show = stockLevel === 'low';
-                break;
-            case 'critical':
-                show = isCritical;
-                break;
-        }
-        
-        if (show) {
-            item.style.display = '';
-            item.style.animation = 'slideIn 0.3s ease-out';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-}
+        const rows = document.querySelectorAll('.stock-row');
+        rows.forEach(row => {
+            const stockLevel = row.dataset.stockLevel;
+            const isCritical = row.dataset.critical === 'true';
+            
+            let show = false;
+            switch(filter) {
+                case 'all':
+                    show = true;
+                    break;
+                case 'low':
+                    show = stockLevel === 'low';
+                    break;
+                case 'critical':
+                    show = isCritical;
+                    break;
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+    }
+    
+    // Add event listeners
+    if (filterAll) {
+        filterAll.addEventListener('click', function() {
+            filterStock('all', this);
+        });
+    }
+    
+    if (filterLow) {
+        filterLow.addEventListener('click', function() {
+            filterStock('low', this);
+        });
+    }
+    
+    if (filterCritical) {
+        filterCritical.addEventListener('click', function() {
+            filterStock('critical', this);
+        });
+    }
+});
 
 // Initialize stock status chart
 document.addEventListener('DOMContentLoaded', function() {
