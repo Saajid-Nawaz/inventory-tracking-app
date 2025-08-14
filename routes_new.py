@@ -927,11 +927,16 @@ def upload_materials_excel():
 @app.route('/view_stock')
 @login_required
 def view_stock():
-    if current_user.role != 'site_engineer':
+    # Allow both site engineers and storesman to view stock
+    if current_user.role not in ['site_engineer', 'storesman']:
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    site_id = request.args.get('site_id', type=int)
+    # Get site_id - for storesman, use their assigned site
+    if current_user.role == 'storesman':
+        site_id = current_user.assigned_site_id
+    else:
+        site_id = request.args.get('site_id', type=int)
     
     try:
         stock_summary = InventoryService.get_stock_summary(site_id)
@@ -940,7 +945,12 @@ def view_stock():
         stock_summary = []
         flash('Error loading stock data. Please try again.', 'error')
     
-    sites = Site.query.all()
+    # For site engineers, show all sites; for storesman, only their site
+    if current_user.role == 'site_engineer':
+        sites = Site.query.all()
+    else:
+        sites = [current_user.assigned_site] if current_user.assigned_site else []
+    
     selected_site = Site.query.get(site_id) if site_id else None
     
     return render_template('view_stock.html',
