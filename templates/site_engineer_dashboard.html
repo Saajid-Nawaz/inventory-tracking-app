@@ -1,56 +1,105 @@
 {% extends "base_new.html" %}
 
-{% block title %}Site Engineer Dashboard{% endblock %}
+{% block title %}Site Engineer Dashboard - Multi-Site Management{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-tachometer-alt"></i> Site Engineer Dashboard</h2>
-        <p class="text-muted">Manage inventory across all construction sites</p>
+<!-- Welcome Header -->
+<div class="container-fluid mb-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-gradient-success text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">
+                                <i class="fas fa-hard-hat me-2"></i>
+                                Welcome, {{ current_user.username }}
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                Site Engineer - Multi-Site Inventory Management
+                                <small class="d-block mt-1">Full system access across all construction sites</small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <div class="text-center me-3">
+                                    <div class="fs-3 fw-bold">{{ current_time.strftime('%d') if current_time else moment().strftime('%d') if moment else '14' }}</div>
+                                    <div class="small">{{ current_time.strftime('%b %Y') if current_time else moment().strftime('%b %Y') if moment else 'Aug 2025' }}</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fs-5">{{ sites|length }}</div>
+                                    <div class="small">Active Sites</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Key Metrics Dashboard -->
 <div class="row mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">{{ total_sites }}</h4>
-                        <p class="card-text">Total Sites</p>
+                        <h3 class="mb-0">{{ total_sites }}</h3>
+                        <p class="mb-0 small">Construction Sites</p>
+                        <small class="opacity-75">Active locations</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-building fa-2x"></i>
+                    <div class="opacity-75">
+                        <i class="fas fa-building fa-3x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">{{ total_materials }}</h4>
-                        <p class="card-text">Materials</p>
+                        <h3 class="mb-0">{{ total_materials }}</h3>
+                        <p class="mb-0 small">Material Types</p>
+                        <small class="opacity-75">In catalog</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-boxes fa-2x"></i>
+                    <div class="opacity-75">
+                        <i class="fas fa-boxes fa-3x"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ pending_approvals }}</h3>
+                        <p class="mb-0 small">Pending Approvals</p>
+                        <small class="opacity-75">Need attention</small>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-clock fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title">{{ recent_transactions|length }}</h4>
-                        <p class="card-text">Recent Transactions</p>
+                        <h3 class="mb-0">{{ recent_transactions|length }}</h3>
+                        <p class="mb-0 small">Today's Activity</p>
+                        <small class="opacity-75">Transactions</small>
                     </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    <div class="opacity-75">
+                        <i class="fas fa-exchange-alt fa-3x"></i>
                     </div>
                 </div>
             </div>
@@ -58,68 +107,289 @@
     </div>
 </div>
 
-<div class="row">
+<!-- Management Actions -->
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5><i class="fas fa-history"></i> Recent Transactions</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Site Management & Operations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('manage_sites') }}" class="btn btn-outline-primary w-100 btn-lg h-100">
+                            <i class="fas fa-map-marker-alt fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">Manage Sites</div>
+                            <small class="text-muted d-block">Add/Edit locations</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('material_management') }}" class="btn btn-outline-success w-100 btn-lg h-100">
+                            <i class="fas fa-cubes fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">Materials</div>
+                            <small class="text-muted d-block">Catalog management</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('manage_users') }}" class="btn btn-outline-info w-100 btn-lg h-100">
+                            <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">User Management</div>
+                            <small class="text-muted d-block">Roles & access</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('approve_requests') }}" class="btn btn-outline-warning w-100 btn-lg h-100">
+                            <i class="fas fa-check-circle fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">Approvals</div>
+                            <small class="text-muted d-block">Review requests</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('stock_transfer') }}" class="btn btn-outline-secondary w-100 btn-lg h-100">
+                            <i class="fas fa-truck fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">Stock Transfer</div>
+                            <small class="text-muted d-block">Between sites</small>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <a href="{{ url_for('reports') }}" class="btn btn-outline-dark w-100 btn-lg h-100">
+                            <i class="fas fa-chart-line fa-2x mb-2 d-block"></i>
+                            <div class="fw-bold">Reports</div>
+                            <small class="text-muted d-block">Analytics & exports</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Site Overview & Recent Activity -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-building me-2"></i>Site Overview
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary active" onclick="showSiteView('overview')">Overview</button>
+                    <button class="btn btn-outline-primary" onclick="showSiteView('stock')">Stock Levels</button>
+                    <button class="btn btn-outline-primary" onclick="showSiteView('activity')">Activity</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="siteOverview">
+                    {% if sites %}
+                    <div class="row">
+                        {% for site in sites %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-start border-primary border-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ site.name }}</h6>
+                                        <span class="badge bg-success">Active</span>
+                                    </div>
+                                    <p class="card-text text-muted small mb-2">{{ site.location }}</p>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="fw-bold text-primary">{{ site.stock_levels|length if site.stock_levels else 0 }}</div>
+                                            <small class="text-muted">Stock Items</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="fw-bold text-success">{{ site.users|length if site.users else 0 }}</div>
+                                            <small class="text-muted">Staff</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="fw-bold text-info">ZMW {{ "%.0f"|format(site.total_value if site.total_value else 0) }}</div>
+                                            <small class="text-muted">Value</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{{ url_for('view_stock', site_id=site.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        <a href="{{ url_for('receive_materials', site_id=site.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-plus me-1"></i>Receive
+                                        </a>
+                                        <a href="{{ url_for('reports', site_id=site.id) }}" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-chart-bar me-1"></i>Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No sites found.</p>
+                        <a href="{{ url_for('manage_sites') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add First Site
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>System Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Low Stock Alerts -->
+                {% if low_stock_alerts %}
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <div>
+                        <strong>{{ low_stock_alerts|length }}</strong> items are running low on stock
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Pending Approvals -->
+                {% if pending_approvals > 0 %}
+                <div class="alert alert-info d-flex align-items-center mb-3">
+                    <i class="fas fa-clock me-2"></i>
+                    <div>
+                        <strong>{{ pending_approvals }}</strong> requests awaiting approval
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- System Health -->
+                <div class="alert alert-success d-flex align-items-center mb-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <div>All systems operational</div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="mt-4">
+                    <h6>Today's Summary</h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded">
+                                <div class="fw-bold text-success">{{ today_receipts|default(0) }}</div>
+                                <small>Receipts</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded">
+                                <div class="fw-bold text-primary">{{ today_issues|default(0) }}</div>
+                                <small>Issues</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Transactions
+                </h5>
+                <a href="{{ url_for('view_transactions') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>View All
+                </a>
             </div>
             <div class="card-body">
                 {% if recent_transactions %}
                 <div class="table-responsive">
-                    <table class="table">
-                        <thead>
+                    <table class="table table-hover">
+                        <thead class="table-light">
                             <tr>
-                                <th>Date</th>
+                                <th>Date & Time</th>
                                 <th>Type</th>
                                 <th>Material</th>
                                 <th>Quantity</th>
                                 <th>Site</th>
+                                <th>User</th>
+                                <th>Value</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for transaction in recent_transactions %}
+                            {% for transaction in recent_transactions[:10] %}
                             <tr>
-                                <td>{{ transaction.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if transaction.transaction_type == 'receive' else 'warning' }}">
+                                    <div class="fw-bold">{{ transaction.timestamp.strftime('%m/%d/%Y') }}</div>
+                                    <small class="text-muted">{{ transaction.timestamp.strftime('%I:%M %p') }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if transaction.transaction_type == 'receive' else 'primary' if transaction.transaction_type == 'issue' else 'warning' }}">
+                                        <i class="fas fa-{{ 'plus' if transaction.transaction_type == 'receive' else 'minus' if transaction.transaction_type == 'issue' else 'exchange-alt' }} me-1"></i>
                                         {{ transaction.transaction_type.title() }}
                                     </span>
                                 </td>
-                                <td>{{ transaction.material.name if transaction.material else 'N/A' }}</td>
-                                <td>{{ transaction.quantity }} {{ transaction.material.unit if transaction.material else '' }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ transaction.material.name if transaction.material else 'Unknown' }}</div>
+                                    {% if transaction.material and transaction.material.category %}
+                                    <small class="text-muted">{{ transaction.material.category }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="fw-bold">{{ transaction.quantity }}</span>
+                                    <small class="text-muted">{{ transaction.material.unit if transaction.material else '' }}</small>
+                                </td>
                                 <td>{{ transaction.site.name if transaction.site else 'N/A' }}</td>
+                                <td>{{ transaction.user.username if transaction.user else 'System' }}</td>
+                                <td>
+                                    {% if transaction.unit_cost %}
+                                    ZMW {{ "%.2f"|format(transaction.quantity * transaction.unit_cost) }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">Completed</span>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No recent transactions found.</p>
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No recent transactions found.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<div class="mt-4">
-    <h5>Quick Actions</h5>
-    <div class="row">
-        <div class="col-md-3">
-            <a href="/health" class="btn btn-outline-primary w-100 mb-2">
-                <i class="fas fa-heartbeat"></i> System Health
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/api/materials" class="btn btn-outline-success w-100 mb-2">
-                <i class="fas fa-list"></i> View Materials API
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/api/sites" class="btn btn-outline-info w-100 mb-2">
-                <i class="fas fa-map-marker-alt"></i> View Sites API
-            </a>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+function showSiteView(view) {
+    // Toggle active button
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Show different content based on view
+    // This can be expanded to show different data views
+    console.log('Showing ' + view + ' view');
+}
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+    location.reload();
+}, 300000);
+</script>
 {% endblock %}

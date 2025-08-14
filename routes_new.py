@@ -214,13 +214,36 @@ def site_engineer_dashboard():
     # Get recent transactions
     recent_transactions = InventoryService.get_transaction_history()[:10]
     
+    # Get additional data for rich dashboard
+    materials = Material.query.all()
+    total_pending = pending_individual_requests + pending_batch_requests + pending_transfer_requests
+    
+    # Get today's activity
+    today = datetime.now().date()
+    today_receipts = Transaction.query.filter(
+        Transaction.transaction_type == 'receive',
+        func.date(Transaction.timestamp) == today
+    ).count()
+    
+    today_issues = Transaction.query.filter(
+        Transaction.transaction_type == 'issue',
+        func.date(Transaction.timestamp) == today
+    ).count()
+    
     return render_template('site_engineer_dashboard.html',
                          sites=sites,
+                         materials=materials,
+                         total_sites=len(sites),
+                         total_materials=len(materials),
+                         pending_approvals=total_pending,
                          pending_individual_requests=pending_individual_requests,
                          pending_batch_requests=pending_batch_requests,
                          pending_transfer_requests=pending_transfer_requests,
-                         low_stock_items=low_stock_items,
-                         recent_transactions=recent_transactions)
+                         low_stock_alerts=low_stock_items,
+                         recent_transactions=recent_transactions,
+                         today_receipts=today_receipts,
+                         today_issues=today_issues,
+                         current_time=datetime.now())
 
 
 @app.route('/manage_users')
@@ -1166,14 +1189,33 @@ def storesman_dashboard():
         status='pending'
     ).count()
     
+    # Get all necessary data for the rich dashboard
+    materials = Material.query.all()
+    stock_levels = StockLevel.query.filter_by(site_id=site_id).all()
+    total_materials = len(materials)
+    current_stock_items = len(stock_levels)
+    pending_requests = pending_individual + pending_batch
+    low_stock_count = len(low_stock_items)
+    
+    # Get pending issue requests for the table
+    pending_issue_requests = IssueRequest.query.filter_by(
+        site_id=site_id,
+        status='pending'
+    ).all()
+    
     return render_template('storesman_dashboard.html',
                          site=site,
-                         stock_summary=stock_summary,
-                         low_stock_items=low_stock_items,
+                         materials=materials,
+                         stock_levels=stock_levels,
+                         total_materials=total_materials,
+                         current_stock_items=current_stock_items,
+                         pending_requests=pending_requests,
+                         low_stock_count=low_stock_count,
+                         pending_issue_requests=pending_issue_requests,
                          recent_transactions=recent_transactions,
-                         pending_individual=pending_individual,
-                         pending_batch=pending_batch,
-                         now=datetime.now())
+                         current_time=datetime.now(),
+                         normal_stock_count=len([s for s in stock_levels if s.material and s.quantity > s.material.minimum_level]),
+                         critical_stock_count=len([s for s in stock_levels if s.material and s.quantity <= (s.material.minimum_level * 0.5)]))
 
 
 @app.route('/receive_materials')

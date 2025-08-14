@@ -1,75 +1,227 @@
 {% extends "base_new.html" %}
 
-{% block title %}Storesman Dashboard{% endblock %}
+{% block title %}Storesman Dashboard - {{ current_user.assigned_site.name if current_user.assigned_site else 'Construction Site' }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-warehouse"></i> Storesman Dashboard</h2>
-        <p class="text-muted">Manage inventory for {{ site.name }}</p>
+<!-- Welcome Section -->
+<div class="container-fluid mb-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-1">
+                                <i class="fas fa-warehouse me-2"></i>
+                                Welcome, {{ current_user.username }}
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                {% if current_user.assigned_site %}
+                                    Managing inventory for {{ current_user.assigned_site.name }}
+                                    <small class="d-block mt-1">{{ current_user.assigned_site.location }}</small>
+                                {% else %}
+                                    Storesman Dashboard
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <div class="text-center">
+                                    <div class="fs-3 fw-bold">{{ current_time.strftime('%d') if current_time else moment().strftime('%d') if moment else '14' }}</div>
+                                    <div class="small">{{ current_time.strftime('%b %Y') if current_time else moment().strftime('%b %Y') if moment else 'Aug 2025' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Dashboard Stats -->
 <div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-building"></i> Site Information</h5>
-            </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
             <div class="card-body">
-                <p><strong>Name:</strong> {{ site.name }}</p>
-                <p><strong>Location:</strong> {{ site.location }}</p>
-                <p><strong>Total Materials:</strong> {{ materials|length }}</p>
-                <p><strong>Stock Items:</strong> {{ stock_levels|length }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ total_materials }}</h4>
+                        <p class="mb-0 small">Available Materials</p>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-boxes fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar"></i> Inventory Summary</h5>
-            </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
             <div class="card-body">
-                <p><strong>Total Stock Items:</strong> {{ stock_levels|length }}</p>
-                <p><strong>Available Materials:</strong> {{ materials|length }}</p>
-                <p><strong>Last Updated:</strong> Now</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ current_stock_items }}</h4>
+                        <p class="mb-0 small">Items in Stock</p>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-cubes fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ pending_requests }}</h4>
+                        <p class="mb-0 small">Pending Requests</p>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">{{ low_stock_count }}</h4>
+                        <p class="mb-0 small">Low Stock Alerts</p>
+                    </div>
+                    <div class="opacity-75">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
+<!-- Quick Actions -->
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5><i class="fas fa-boxes"></i> Current Stock Levels</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('receive_materials') }}" class="btn btn-success w-100 btn-lg">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            <div>Receive Materials</div>
+                            <small class="d-block">Add new inventory</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('request_materials') }}" class="btn btn-primary w-100 btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            <div>Request Materials</div>
+                            <small class="d-block">Issue materials</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('view_stock') }}" class="btn btn-info w-100 btn-lg">
+                            <i class="fas fa-eye me-2"></i>
+                            <div>View Stock</div>
+                            <small class="d-block">Check inventory levels</small>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('reports') }}" class="btn btn-secondary w-100 btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            <div>Reports</div>
+                            <small class="d-block">Generate reports</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Stock Overview -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-warehouse me-2"></i>Current Stock Levels
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="filterStock('all')">All</button>
+                    <button class="btn btn-outline-warning" onclick="filterStock('low')">Low Stock</button>
+                    <button class="btn btn-outline-danger" onclick="filterStock('critical')">Critical</button>
+                </div>
             </div>
             <div class="card-body">
                 {% if stock_levels %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover" id="stockTable">
+                        <thead class="table-dark sticky-top">
                             <tr>
                                 <th>Material</th>
                                 <th>Category</th>
-                                <th>Current Stock</th>
+                                <th>Current</th>
                                 <th>Unit</th>
+                                <th>Min Level</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for stock in stock_levels %}
-                            <tr>
-                                <td>{{ stock.material.name if stock.material else 'Unknown' }}</td>
-                                <td>{{ stock.material.category if stock.material else 'N/A' }}</td>
-                                <td>{{ stock.quantity }}</td>
-                                <td>{{ stock.material.unit if stock.material else 'N/A' }}</td>
+                            <tr class="stock-row" 
+                                data-stock-level="{{ 'low' if stock.material and stock.quantity <= stock.material.minimum_level else 'normal' }}"
+                                data-critical="{{ 'true' if stock.material and stock.quantity <= (stock.material.minimum_level * 0.5) else 'false' }}">
                                 <td>
-                                    {% if stock.material and stock.quantity <= stock.material.minimum_level %}
-                                    <span class="badge bg-danger">Low Stock</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Normal</span>
+                                    <strong>{{ stock.material.name if stock.material else 'Unknown' }}</strong>
+                                    {% if stock.material and stock.material.description %}
+                                    <br><small class="text-muted">{{ stock.material.description[:50] }}{% if stock.material.description|length > 50 %}...{% endif %}</small>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ stock.material.category if stock.material else 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold {% if stock.material and stock.quantity <= stock.material.minimum_level %}text-danger{% endif %}">
+                                        {{ stock.quantity }}
+                                    </span>
+                                </td>
+                                <td>{{ stock.material.unit if stock.material else 'N/A' }}</td>
+                                <td>{{ stock.material.minimum_level if stock.material else 'N/A' }}</td>
+                                <td>
+                                    {% if stock.material %}
+                                        {% if stock.quantity <= (stock.material.minimum_level * 0.5) %}
+                                        <span class="badge bg-danger">Critical</span>
+                                        {% elif stock.quantity <= stock.material.minimum_level %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                        {% else %}
+                                        <span class="badge bg-success">Normal</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('receive_materials', material_id=stock.material.id) }}" 
+                                           class="btn btn-outline-success btn-sm" title="Receive">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                        <a href="{{ url_for('request_materials', material_id=stock.material.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" title="Request">
+                                            <i class="fas fa-minus"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -77,26 +229,187 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No stock levels found for this site.</p>
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No stock levels found for this site.</p>
+                    <a href="{{ url_for('receive_materials') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Receive First Materials
+                    </a>
+                </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Inventory Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Stock Status Chart -->
+                <div class="mb-4">
+                    <canvas id="stockStatusChart" width="300" height="200"></canvas>
+                </div>
+                
+                <!-- Category Breakdown -->
+                <div class="mb-3">
+                    <h6>Category Breakdown</h6>
+                    {% set categories = {} %}
+                    {% for stock in stock_levels %}
+                        {% if stock.material and stock.material.category %}
+                            {% set _ = categories.update({stock.material.category: categories.get(stock.material.category, 0) + 1}) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% for category, count in categories.items() %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small">{{ category }}</span>
+                        <span class="badge bg-info">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Recent Activity -->
+                <div>
+                    <h6>Recent Activity</h6>
+                    {% if recent_transactions %}
+                        {% for transaction in recent_transactions[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div>
+                                <small class="fw-bold">{{ transaction.material.name if transaction.material else 'Unknown' }}</small>
+                                <br><small class="text-muted">{{ transaction.transaction_type.title() }}</small>
+                            </div>
+                            <div class="text-end">
+                                <small class="fw-bold">{{ transaction.quantity }}</small>
+                                <br><small class="text-muted">{{ transaction.timestamp.strftime('%m/%d') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <p class="small text-muted">No recent activity</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="mt-4">
-    <h5>Quick Actions</h5>
-    <div class="row">
-        <div class="col-md-3">
-            <a href="/health" class="btn btn-outline-primary w-100 mb-2">
-                <i class="fas fa-heartbeat"></i> System Health
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/api/materials" class="btn btn-outline-success w-100 mb-2">
-                <i class="fas fa-list"></i> View Materials
-            </a>
+<!-- Pending Requests -->
+{% if pending_issue_requests %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Pending Material Requests ({{ pending_issue_requests|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Material</th>
+                                <th>Quantity</th>
+                                <th>Requested By</th>
+                                <th>Date</th>
+                                <th>Priority</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in pending_issue_requests %}
+                            <tr>
+                                <td><span class="badge bg-primary">#{{ request.id }}</span></td>
+                                <td>{{ request.material.name if request.material else 'Unknown' }}</td>
+                                <td>{{ request.quantity }} {{ request.material.unit if request.material else '' }}</td>
+                                <td>{{ request.requested_by.username if request.requested_by else 'Unknown' }}</td>
+                                <td>{{ request.request_date.strftime('%Y-%m-%d') if request.request_date else 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if request.priority == 'high' else 'warning' if request.priority == 'medium' else 'info' }}">
+                                        {{ request.priority.title() if request.priority else 'Normal' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('approve_requests', request_id=request.id) }}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check me-1"></i>Process
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Stock filtering
+function filterStock(type) {
+    const rows = document.querySelectorAll('.stock-row');
+    rows.forEach(row => {
+        const stockLevel = row.getAttribute('data-stock-level');
+        const isCritical = row.getAttribute('data-critical') === 'true';
+        
+        let show = false;
+        switch(type) {
+            case 'all':
+                show = true;
+                break;
+            case 'low':
+                show = stockLevel === 'low';
+                break;
+            case 'critical':
+                show = isCritical;
+                break;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// Stock status chart
+const ctx = document.getElementById('stockStatusChart').getContext('2d');
+const stockStatusChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Normal', 'Low Stock', 'Critical'],
+        datasets: [{
+            data: [
+                {{ normal_stock_count|default(0) }},
+                {{ low_stock_count|default(0) }},
+                {{ critical_stock_count|default(0) }}
+            ],
+            backgroundColor: [
+                '#28a745',
+                '#ffc107',
+                '#dc3545'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Auto-refresh data every 5 minutes
+setInterval(() => {
+    location.reload();
+}, 300000);
+</script>
 {% endblock %}
