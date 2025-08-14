@@ -641,6 +641,7 @@ def add_material():
     
     try:
         name = request.form.get('name')
+        sku = request.form.get('sku')
         unit = request.form.get('unit')
         description = request.form.get('description')
         cost_per_unit = float(request.form.get('cost_per_unit', 0))
@@ -649,6 +650,7 @@ def add_material():
         
         material = Material(
             name=name,
+            sku=sku,
             unit=unit,
             description=description,
             cost_per_unit=cost_per_unit,
@@ -666,7 +668,7 @@ def add_material():
         logging.error(f"Error adding material: {str(e)}")
         flash('Error adding material', 'error')
     
-    return redirect(url_for('manage_materials'))
+    return redirect(url_for('material_management'))
 
 
 @app.route('/download_material_template')
