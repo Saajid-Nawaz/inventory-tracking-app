@@ -48,14 +48,24 @@
         
         .card {
             border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
         }
         
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .card.shadow-lg {
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .card.shadow-lg:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.25);
         }
         
         .card-header {

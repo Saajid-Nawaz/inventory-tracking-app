@@ -121,70 +121,164 @@
                 </div>
             </div>
             <div class="card-body p-4">
+                <!-- Primary Management Tools -->
                 <div class="row g-3">
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('manage_sites') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-primary bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('manage_sites') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-primary bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-map-marker-alt fa-2x text-primary"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1">Sites</h6>
-                                <p class="text-muted small mb-0">Manage locations</p>
+                                <h6 class="fw-bold text-dark mb-1">Manage Sites</h6>
+                                <p class="text-muted small mb-0">Locations</p>
+                            </div>
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-primary">Admin</span>
                             </div>
                         </a>
                     </div>
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('manage_materials') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-success bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('manage_materials') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-success bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-cubes fa-2x text-success"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">Materials</h6>
-                                <p class="text-muted small mb-0">Catalog management</p>
+                                <p class="text-muted small mb-0">Catalog</p>
+                            </div>
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-success">94+</span>
                             </div>
                         </a>
                     </div>
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('manage_users') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-info bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('manage_users') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-info bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-users fa-2x text-info"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">Users</h6>
-                                <p class="text-muted small mb-0">Roles & access</p>
+                                <p class="text-muted small mb-0">Access control</p>
                             </div>
                         </a>
                     </div>
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('approve_requests') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-warning bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('approve_requests') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-warning bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-check-circle fa-2x text-warning"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">Approvals</h6>
-                                <p class="text-muted small mb-0">Review requests</p>
+                                <p class="text-muted small mb-0">Review</p>
                             </div>
+                            {% if pending_approvals > 0 %}
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-warning text-dark">{{ pending_approvals }}</span>
+                            </div>
+                            {% endif %}
                         </a>
                     </div>
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('stock_transfer') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-secondary bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('stock_transfer') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-secondary bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-truck fa-2x text-secondary"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">Transfer</h6>
-                                <p class="text-muted small mb-0">Between sites</p>
+                                <p class="text-muted small mb-0">Inter-site</p>
                             </div>
                         </a>
                     </div>
                     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
-                        <a href="{{ url_for('reports') }}" class="card border-0 shadow-sm h-100 text-decoration-none">
-                            <div class="card-body text-center p-3">
-                                <div class="bg-dark bg-opacity-10 rounded-3 p-3 mx-auto mb-3" style="width: fit-content;">
+                        <a href="{{ url_for('reports') }}" class="card border-0 shadow-lg h-100 text-decoration-none position-relative overflow-hidden">
+                            <div class="card-body text-center p-4 bg-gradient position-relative">
+                                <div class="bg-dark bg-opacity-15 rounded-circle p-3 mx-auto mb-3 d-inline-flex">
                                     <i class="fas fa-chart-line fa-2x text-dark"></i>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1">Reports</h6>
-                                <p class="text-muted small mb-0">Analytics & exports</p>
+                                <p class="text-muted small mb-0">Analytics</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Operations & Inventory Tools -->
+                <div class="row g-3 mt-3">
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('bulk_receive_materials') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-success bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-boxes fa-lg text-success me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">Bulk Receive</div>
+                                        <small class="text-muted">Multiple materials</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('stock_adjustments') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-warning bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-tools fa-lg text-warning me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">Stock Adjustments</div>
+                                        <small class="text-muted">Physical count</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('batch_operations') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-info bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-layer-group fa-lg text-info me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">Batch Operations</div>
+                                        <small class="text-muted">Mass processing</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('transaction_history') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-secondary bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-history fa-lg text-secondary me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">Transaction History</div>
+                                        <small class="text-muted">Full audit trail</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('system_settings') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-dark bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-cog fa-lg text-dark me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">System Settings</div>
+                                        <small class="text-muted">Configuration</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ url_for('excel_operations') }}" class="card border-0 shadow-sm h-100 text-decoration-none bg-danger bg-opacity-10">
+                            <div class="card-body text-center p-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-file-excel fa-lg text-danger me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold small text-dark">Excel Operations</div>
+                                        <small class="text-muted">Import/Export</small>
+                                    </div>
+                                </div>
                             </div>
                         </a>
                     </div>

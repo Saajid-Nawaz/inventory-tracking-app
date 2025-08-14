@@ -2146,3 +2146,76 @@ def internal_error(error):
 @app.errorhandler(403)
 def forbidden(error):
     return render_template('error.html', error_code=403, error_message="Access forbidden"), 403
+
+
+@app.route('/transaction_history')
+@login_required
+def transaction_history():
+    if current_user.role == 'storesman':
+        site_id = current_user.assigned_site_id
+    else:
+        site_id = request.args.get('site_id', type=int)
+    
+    # Get all transactions for the site
+    query = Transaction.query
+    if site_id:
+        query = query.filter_by(site_id=site_id)
+    
+    transactions = query.order_by(Transaction.created_at.desc()).limit(1000).all()
+    sites = Site.query.all() if current_user.role == 'site_engineer' else []
+    
+    return render_template('transaction_history.html', 
+                         transactions=transactions, 
+                         sites=sites,
+                         selected_site_id=site_id)
+
+
+@app.route('/bulk_stock_adjustments')
+@login_required  
+def bulk_stock_adjustments():
+    if current_user.role not in ['site_engineer', 'storesman']:
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get site based on user role
+    if current_user.role == 'storesman':
+        site_id = current_user.assigned_site_id
+        sites = [current_user.assigned_site] if current_user.assigned_site else []
+    else:
+        site_id = request.args.get('site_id', type=int)
+        sites = Site.query.all()
+    
+    # Get stock levels for the site
+    stock_levels = []
+    if site_id:
+        stock_levels = StockLevel.query.filter_by(site_id=site_id).all()
+    
+    return render_template('bulk_stock_adjustments.html',
+                         stock_levels=stock_levels,
+                         sites=sites,
+                         selected_site_id=site_id)
+
+
+@app.route('/batch_operations')
+@login_required
+def batch_operations():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    sites = Site.query.all()
+    materials = Material.query.all()
+    
+    return render_template('batch_operations.html',
+                         sites=sites,
+                         materials=materials)
+
+
+@app.route('/excel_operations')
+@login_required
+def excel_operations():
+    if current_user.role != 'site_engineer':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('excel_operations.html')
