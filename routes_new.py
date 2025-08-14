@@ -517,7 +517,13 @@ def material_management():
         return redirect(url_for('index'))
     
     materials = Material.query.all()
-    return render_template('material_management.html', materials=materials)
+    total_materials = len(materials)
+    active_materials = len([m for m in materials if m.is_active])
+    
+    return render_template('material_management.html', 
+                         materials=materials, 
+                         total_materials=total_materials,
+                         active_materials=active_materials)
 
 
 @app.route('/system_settings', methods=['GET', 'POST'])
