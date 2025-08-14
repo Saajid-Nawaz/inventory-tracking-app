@@ -230,7 +230,7 @@ def site_engineer_dashboard():
         func.date(Transaction.created_at) == today
     ).count()
     
-    return render_template('site_engineer_dashboard.html',
+    return render_template('site_engineer_dashboard_new.html',
                          sites=sites,
                          materials=materials,
                          total_sites=len(sites),
@@ -1213,7 +1213,7 @@ def storesman_dashboard():
         status='pending'
     ).all()
     
-    return render_template('storesman_dashboard.html',
+    return render_template('storesman_dashboard_new.html',
                          site=site,
                          materials=materials,
                          stock_levels=stock_levels,
