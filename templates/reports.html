@@ -143,6 +143,42 @@
         </div>
     </div>
 
+    <!-- Material Receipts Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        Material Receipts & Vouchers
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Download professional goods received vouchers for material transactions.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('download_all_receipts') }}" class="btn btn-primary">
+                            <i class="fas fa-file-archive me-2"></i>Download All Receipts (ZIP)
+                        </a>
+                        <button class="btn btn-outline-info" onclick="showReceiptInfo()">
+                            <i class="fas fa-info-circle me-2"></i>Receipt Information
+                        </button>
+                    </div>
+                    <div id="receiptInfo" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>About Material Receipts</h6>
+                            <ul class="mb-0">
+                                <li>Professional PDF vouchers for all material receive transactions</li>
+                                <li>Includes date, supplier info, quantities, site details, and received by information</li>
+                                <li>Individual receipts available in transaction history reports</li>
+                                <li>Perfect for audit trails and financial record keeping</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Stats -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -184,11 +220,22 @@
                         <li><i class="fas fa-check text-success me-2"></i>All reports include FIFO cost calculations</li>
                         <li><i class="fas fa-check text-success me-2"></i>Real-time data from active inventory</li>
                         <li><i class="fas fa-check text-success me-2"></i>PDF and Excel export options</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Audit trail included in all reports</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Professional goods received vouchers</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function showReceiptInfo() {
+    const info = document.getElementById('receiptInfo');
+    if (info.style.display === 'none') {
+        info.style.display = 'block';
+    } else {
+        info.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

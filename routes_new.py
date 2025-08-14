@@ -18,6 +18,7 @@ from models_new import (
 )
 from inventory_service import InventoryService, ReportService
 from report_generator import PDFReportGenerator, ExcelReportGenerator
+from receipt_generator import ReceiptGenerator
 
 # Define comprehensive material categories
 MATERIAL_CATEGORIES = [
@@ -2105,6 +2106,150 @@ def test_transactions(site_id):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/download_receipt/<transaction_id>')
+@login_required
+def download_receipt(transaction_id):
+    """Download goods received voucher for a specific transaction"""
+    try:
+        # Get transaction details
+        transaction = Transaction.query.get_or_404(transaction_id)
+        
+        # Check permissions
+        if current_user.role == 'storesman' and current_user.assigned_site_id != transaction.site_id:
+            flash('Access denied', 'error')
+            return redirect(url_for('index'))
+        
+        # Only generate receipts for 'receive' type transactions
+        if transaction.type != 'receive':
+            flash('Receipts are only available for material receipts', 'warning')
+            return redirect(url_for('reports'))
+        
+        # Get related data
+        site_data = {
+            'name': transaction.site.name,
+            'location': transaction.site.location or 'N/A',
+            'code': transaction.site.code or 'N/A'
+        }
+        
+        user_data = {
+            'username': transaction.creator_user.username,
+            'role': transaction.creator_user.role
+        }
+        
+        # Get company settings
+        system_settings = SystemSettings.query.first()
+        company_settings = {
+            'company_name': system_settings.company_name if system_settings else 'Construction Company',
+            'currency': system_settings.currency if system_settings else 'ZMW'
+        }
+        
+        # Generate receipt
+        receipt_generator = ReceiptGenerator()
+        transaction_data = receipt_generator.extract_transaction_data(transaction)
+        
+        # Generate PDF
+        pdf_buffer = receipt_generator.generate_receipt(
+            transaction_data, site_data, user_data, company_settings
+        )
+        
+        # Create filename
+        filename = f"Receipt_{transaction.serial_number}_{transaction.created_at.strftime('%Y%m%d')}.pdf"
+        
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating receipt: {str(e)}")
+        flash('Error generating receipt', 'error')
+        return redirect(url_for('reports'))
+
+
+@app.route('/download_all_receipts')
+@login_required
+def download_all_receipts():
+    """Download all receipts for receive transactions as a ZIP file"""
+    try:
+        import zipfile
+        from io import BytesIO
+        
+        # Get receive transactions based on user role
+        if current_user.role == 'storesman':
+            transactions = Transaction.query.filter_by(
+                site_id=current_user.assigned_site_id,
+                type='receive'
+            ).order_by(Transaction.created_at.desc()).limit(100).all()
+        else:
+            transactions = Transaction.query.filter_by(
+                type='receive'
+            ).order_by(Transaction.created_at.desc()).limit(100).all()
+        
+        if not transactions:
+            flash('No receipt transactions found', 'warning')
+            return redirect(url_for('reports'))
+        
+        # Create ZIP file in memory
+        zip_buffer = BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            receipt_generator = ReceiptGenerator()
+            
+            for transaction in transactions:
+                try:
+                    # Get related data
+                    site_data = {
+                        'name': transaction.site.name,
+                        'location': transaction.site.location or 'N/A',
+                        'code': transaction.site.code or 'N/A'
+                    }
+                    
+                    user_data = {
+                        'username': transaction.creator_user.username if transaction.creator_user else 'Unknown',
+                        'role': transaction.creator_user.role if transaction.creator_user else 'Unknown'
+                    }
+                    
+                    # Get company settings
+                    system_settings = SystemSettings.query.first()
+                    company_settings = {
+                        'company_name': system_settings.company_name if system_settings else 'Construction Company',
+                        'currency': system_settings.currency if system_settings else 'ZMW'
+                    }
+                    
+                    # Generate receipt
+                    transaction_data = receipt_generator.extract_transaction_data(transaction)
+                    pdf_buffer = receipt_generator.generate_receipt(
+                        transaction_data, site_data, user_data, company_settings
+                    )
+                    
+                    # Add to ZIP
+                    filename = f"Receipt_{transaction.serial_number}_{transaction.created_at.strftime('%Y%m%d')}.pdf"
+                    zip_file.writestr(filename, pdf_buffer.getvalue())
+                    
+                except Exception as e:
+                    logging.error(f"Error generating receipt for transaction {transaction.serial_number}: {str(e)}")
+                    continue
+        
+        zip_buffer.seek(0)
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        zip_filename = f"Material_Receipts_{timestamp}.zip"
+        
+        return send_file(
+            zip_buffer,
+            as_attachment=True,
+            download_name=zip_filename,
+            mimetype='application/zip'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating receipts ZIP: {str(e)}")
+        flash('Error generating receipts bundle', 'error')
+        return redirect(url_for('reports'))
 
 @app.route('/api/pending_counts')
 @login_required

@@ -175,6 +175,13 @@
                                                         <i class="fas fa-comment"></i>
                                                     </button>
                                                 {% endif %}
+                                                {% if txn.type == 'receive' %}
+                                                    <a href="{{ url_for('download_receipt', transaction_id=txn.id) }}" 
+                                                       class="btn btn-sm btn-outline-success" 
+                                                       title="Download Receipt">
+                                                        <i class="fas fa-receipt"></i>
+                                                    </a>
+                                                {% endif %}
                                                 <a href="{{ url_for('transaction_documents', transaction_id=txn.id) }}" 
                                                    class="btn btn-sm btn-outline-secondary" 
                                                    title="View details">
