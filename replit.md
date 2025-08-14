@@ -24,6 +24,7 @@ The application employs a traditional three-tier architecture:
 -   **Comprehensive Material Catalog**: Includes material categorization and an extensive database of construction materials with standardized units and specifications.
 -   **Professional Report System**: Enhanced PDF and Excel reports with company branding, consistent styling, and comprehensive data presentation.
 -   **Render Deployment Ready**: Fully configured for deployment to Render cloud platform with PostgreSQL database integration.
+-   **Successfully Deployed**: Live application deployed at https://inventory-tracking-y2pg.onrender.com with all features operational.
 
 ### Key Components
 -   **Flask Application**: Main application configuration, database initialization, file upload, and session management.
