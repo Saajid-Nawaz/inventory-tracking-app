@@ -19,6 +19,7 @@ from models_new import (
 from inventory_service import InventoryService, ReportService
 from report_generator import PDFReportGenerator, ExcelReportGenerator
 from receipt_generator import ReceiptGenerator
+from enhanced_report_generator import ProfessionalReportGenerator, EnhancedExcelReportGenerator
 
 # Define comprehensive material categories
 MATERIAL_CATEGORIES = [
@@ -1672,21 +1673,49 @@ def generate_daily_report():
             return redirect(url_for('reports'))
         
         issues_data = ReportService.generate_daily_issues_report(site_id, report_date)
-        # Get current currency setting
-        currency = 'ZMW'  # Default currency setting
+        
+        # Get system settings for currency and company name
+        system_settings = SystemSettings.query.first()
+        currency = system_settings.currency if system_settings else 'ZMW'
+        company_name = system_settings.company_name if system_settings else 'Construction Company'
         
         if report_format == 'excel':
-            excel_data = ExcelReportGenerator.generate_daily_issues_excel(site.name, report_date, issues_data)
+            # Use enhanced Excel generator
+            excel_generator = EnhancedExcelReportGenerator()
+            excel_data = {
+                'transactions': [
+                    {
+                        'serial_number': txn.serial_number,
+                        'date': txn.created_at.strftime('%d/%m/%Y %H:%M'),
+                        'material_name': txn.material_name,
+                        'quantity': abs(txn.quantity),
+                        'unit': txn.unit,
+                        'unit_cost': txn.unit_cost,
+                        'total_value': abs(txn.total_value),
+                        'project_code': txn.issued_to_project_code or 'N/A'
+                    } for txn in issues_data
+                ]
+            }
+            
+            excel_buffer = excel_generator.generate_comprehensive_excel_report(
+                company_name, excel_data, currency
+            )
+            
             return send_file(
-                BytesIO(excel_data),
+                excel_buffer,
                 as_attachment=True,
                 download_name=f'daily_issues_{site.name}_{report_date.strftime("%Y%m%d")}.xlsx',
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
         else:
-            pdf_data = PDFReportGenerator.generate_daily_issues_report(site.name, report_date, issues_data, currency)
+            # Use professional PDF generator
+            report_generator = ProfessionalReportGenerator()
+            pdf_buffer = report_generator.generate_daily_issues_report(
+                company_name, site.name, report_date, issues_data, currency
+            )
+            
             return send_file(
-                BytesIO(pdf_data),
+                pdf_buffer,
                 as_attachment=True,
                 download_name=f'daily_issues_{site.name}_{report_date.strftime("%Y%m%d")}.pdf',
                 mimetype='application/pdf'
@@ -1721,27 +1750,49 @@ def generate_stock_report():
             return redirect(url_for('reports'))
         
         stock_data = ReportService.generate_stock_summary_report(site_id)
-        # Debug logging
-        logging.info(f"Stock data retrieved for site {site_id}: {len(stock_data)} items")
-        if stock_data:
-            for i, item in enumerate(stock_data[:3]):  # Log first 3 items
-                logging.info(f"Stock item {i+1}: {item.material_name} - {item.quantity} {item.unit}")
         
-        # Get current currency setting
-        currency = 'ZMW'  # Updated to ZMW
+        # Get system settings for currency and company name
+        system_settings = SystemSettings.query.first()
+        currency = system_settings.currency if system_settings else 'ZMW'
+        company_name = system_settings.company_name if system_settings else 'Construction Company'
         
         if format_type == 'excel':
-            excel_data = ExcelReportGenerator.generate_stock_summary_excel(site.name, stock_data)
+            # Use enhanced Excel generator
+            excel_generator = EnhancedExcelReportGenerator()
+            excel_data = {
+                'stock_levels': [
+                    {
+                        'material_name': item.material_name,
+                        'category': item.category or 'N/A',
+                        'quantity': item.quantity,
+                        'unit': item.unit,
+                        'unit_cost': item.total_value / item.quantity if item.quantity > 0 else 0,
+                        'total_value': item.total_value,
+                        'minimum_level': item.minimum_level,
+                        'status': 'LOW STOCK' if item.quantity < item.minimum_level else 'OK'
+                    } for item in stock_data
+                ]
+            }
+            
+            excel_buffer = excel_generator.generate_comprehensive_excel_report(
+                company_name, excel_data, currency
+            )
+            
             return send_file(
-                BytesIO(excel_data),
+                excel_buffer,
                 as_attachment=True,
                 download_name=f'stock_summary_{site.name}_{datetime.now().strftime("%Y%m%d")}.xlsx',
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
         else:
-            pdf_data = PDFReportGenerator.generate_stock_summary_report(site.name, stock_data, currency)
+            # Use professional PDF generator
+            report_generator = ProfessionalReportGenerator()
+            pdf_buffer = report_generator.generate_stock_summary_report(
+                company_name, site.name, stock_data, currency
+            )
+            
             return send_file(
-                BytesIO(pdf_data),
+                pdf_buffer,
                 as_attachment=True,
                 download_name=f'stock_summary_{site.name}_{datetime.now().strftime("%Y%m%d")}.pdf',
                 mimetype='application/pdf'
@@ -1801,30 +1852,54 @@ def generate_transaction_history_report():
         # Generate filename
         date_suffix = f"_{start_date}_{end_date}" if start_date and end_date else ""
         
+        # Get system settings for currency and company name
+        system_settings = SystemSettings.query.first()
+        currency = system_settings.currency if system_settings else 'ZMW'
+        company_name = system_settings.company_name if system_settings else 'Construction Company'
+        
         if report_format == 'excel':
-            # Generate Excel report
-            excel_data = ExcelReportGenerator.generate_transaction_history_excel(
-                site.name, transactions_data, start_date_obj, end_date_obj
+            # Use enhanced Excel generator
+            excel_generator = EnhancedExcelReportGenerator()
+            excel_data = {
+                'transactions': [
+                    {
+                        'serial_number': txn.serial_number,
+                        'date': txn.created_at.strftime('%d/%m/%Y %H:%M'),
+                        'material_name': txn.material_name,
+                        'type': txn.type.upper(),
+                        'quantity': txn.quantity,
+                        'unit': txn.unit,
+                        'unit_cost': txn.unit_cost,
+                        'total_value': txn.total_value,
+                        'project_code': txn.issued_to_project_code or 'N/A',
+                        'created_by': txn.creator.username if hasattr(txn, 'creator') and txn.creator else 'System'
+                    } for txn in transactions_data
+                ]
+            }
+            
+            excel_buffer = excel_generator.generate_comprehensive_excel_report(
+                company_name, excel_data, currency
             )
             
             filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.xlsx"
             
             return send_file(
-                BytesIO(excel_data),
+                excel_buffer,
                 as_attachment=True,
                 download_name=filename,
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
         else:
-            # Generate PDF report
-            pdf_data = PDFReportGenerator.generate_transaction_history_report(
-                site.name, start_date_obj, end_date_obj, transactions_data
+            # Use professional PDF generator
+            report_generator = ProfessionalReportGenerator()
+            pdf_buffer = report_generator.generate_transaction_history_report(
+                company_name, site.name, transactions_data, start_date_obj, end_date_obj, currency
             )
             
             filename = f"transaction_history_{site.name.replace(' ', '_')}{date_suffix}.pdf"
             
             return send_file(
-                BytesIO(pdf_data),
+                pdf_buffer,
                 as_attachment=True,
                 download_name=filename,
                 mimetype='application/pdf'
@@ -2373,3 +2448,5 @@ def excel_operations():
         return redirect(url_for('index'))
     
     return render_template('excel_operations.html')
+
+
