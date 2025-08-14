@@ -34,7 +34,7 @@
                 <p><strong>Total Inventory Value:</strong> ZMW {{ "%.2f"|format(total_value) }}</p>
                 {% set low_stock = stock_levels|selectattr('quantity', 'le', stock_levels|selectattr('material', 'defined')|selectattr('material.minimum_level', 'defined')|map(attribute='material.minimum_level')|list|min|default(0))|list %}
                 <p><strong>Low Stock Items:</strong> {{ low_stock|length }}</p>
-                <p><strong>Last Updated:</strong> {{ moment().format('YYYY-MM-DD HH:mm') }}</p>
+                <p><strong>Last Updated:</strong> Now</p>
             </div>
         </div>
     </div>

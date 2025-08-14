@@ -6,6 +6,7 @@ from flask import render_template, request, redirect, url_for, flash, session, j
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from app_deploy import app, db
+from datetime import datetime
 from models_new import User, Site, Material, StockLevel, Transaction
 
 # Initialize Flask-Login
@@ -100,7 +101,8 @@ def storesman_dashboard():
     return render_template('storesman_dashboard.html', 
                          site=site,
                          materials=materials,
-                         stock_levels=stock_levels)
+                         stock_levels=stock_levels,
+                         current_time=datetime.now().strftime('%Y-%m-%d %H:%M'))
 
 @app.route('/health')
 def health_check():
