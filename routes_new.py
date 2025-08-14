@@ -219,6 +219,7 @@ def site_engineer_dashboard():
     total_pending = pending_individual_requests + pending_batch_requests + pending_transfer_requests
     
     # Get today's activity
+    from sqlalchemy import func
     today = datetime.now().date()
     today_receipts = Transaction.query.filter(
         Transaction.type == 'receive',
