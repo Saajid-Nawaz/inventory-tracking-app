@@ -141,9 +141,8 @@ def initialize_default_data():
         logging.error(f"Error initializing default data: {str(e)}")
 
 
-# Initialize data when app starts
-with app.app_context():
-    initialize_default_data()
+# Initialize data when app starts (removed duplicate call - already called in app.py)
+# Data initialization is handled in app.py to avoid import circular issues
 
 
 # Authentication Routes
