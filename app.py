@@ -13,16 +13,32 @@ class Base(DeclarativeBase):
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET")
+# Ensure SESSION_SECRET is set with a fallback for Render
+session_secret = os.environ.get("SESSION_SECRET")
+if not session_secret:
+    # Generate a secure fallback for deployment
+    import secrets
+    session_secret = secrets.token_hex(32)
+    logging.warning("SESSION_SECRET not found, using generated fallback")
+
+app.secret_key = session_secret
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Database configuration with robust error handling
 database_url = os.environ.get("DATABASE_URL")
 
-# Check for the problematic hostname and provide fallback
-if database_url and "dpg-d1r5v5be5dus73eaj13g-a" in database_url:
-    logging.error("Detected problematic Render database hostname, using fallback")
-    database_url = None
+# Enhanced database URL validation for Render deployment
+if database_url:
+    # Check for known problematic hostnames
+    problematic_hosts = ["dpg-d1r5v5be5dus73eaj13g-a", "ep-delicate-", "ep-cold-"]
+    if any(host in database_url for host in problematic_hosts):
+        logging.error("Detected problematic Render database hostname, using fallback")
+        database_url = None
+    
+    # Validate URL format
+    if database_url and not (database_url.startswith("postgres://") or database_url.startswith("postgresql://")):
+        logging.error("Invalid database URL format")
+        database_url = None
 
 if database_url:
     # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
@@ -41,13 +57,16 @@ if database_url:
             'max_overflow': 0,
             'echo': False,
             'connect_args': {
-                'sslmode': 'require',
-                'connect_timeout': 10,
+                'sslmode': 'prefer',  # Changed from require to prefer for flexibility
+                'connect_timeout': 30,  # Increased timeout
                 'application_name': 'construction_tracker'
             }
         }
     except Exception as e:
         logging.error(f"PostgreSQL configuration failed: {e}")
+        # More specific error logging for debugging
+        import traceback
+        logging.error(f"Full traceback: {traceback.format_exc()}")
         database_url = None
 
 if not database_url:
