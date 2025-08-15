@@ -16,35 +16,44 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Database configuration - Compatible with Render PostgreSQL
+# Database configuration with robust error handling
 database_url = os.environ.get("DATABASE_URL")
 
-# Handle different database URL formats for maximum compatibility
+# Check for the problematic hostname and provide fallback
+if database_url and "dpg-d1r5v5be5dus73eaj13g-a" in database_url:
+    logging.error("Detected problematic Render database hostname, using fallback")
+    database_url = None
+
 if database_url:
     # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
     
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    logging.info(f"Using PostgreSQL database: {database_url[:50]}...")
-    
-    # Production PostgreSQL configuration optimized for Render
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 280,  # Slightly less than Render's 300s timeout
-        'pool_timeout': 20,
-        'max_overflow': 0,    # Conservative for free tier
-        'echo': False,        # Disable SQL logging in production
-        'connect_args': {
-            'sslmode': 'require',
-            'connect_timeout': 10,
-            'application_name': 'construction_tracker'
+    try:
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+        logging.info(f"Using PostgreSQL database: {database_url[:50]}...")
+        
+        # Production PostgreSQL configuration optimized for Render
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 280,
+            'pool_timeout': 20,
+            'max_overflow': 0,
+            'echo': False,
+            'connect_args': {
+                'sslmode': 'require',
+                'connect_timeout': 10,
+                'application_name': 'construction_tracker'
+            }
         }
-    }
-else:
-    # Local development fallback
+    except Exception as e:
+        logging.error(f"PostgreSQL configuration failed: {e}")
+        database_url = None
+
+if not database_url:
+    # Robust fallback for deployment issues
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///construction_tracker.db"
-    logging.warning("No DATABASE_URL found, using SQLite for local development")
+    logging.warning("Using SQLite fallback - set DATABASE_URL environment variable for PostgreSQL")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
