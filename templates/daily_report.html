@@ -11,7 +11,7 @@
                 Daily Usage Report
             </h2>
             <div>
-                <a href="{{ url_for('site_engineer') if current_user.role == 'site_engineer' else url_for('storesperson') }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('site_engineer_dashboard') if current_user.role == 'site_engineer' else url_for('storesman_dashboard') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i>
                     Back to Dashboard
                 </a>

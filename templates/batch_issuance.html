@@ -10,7 +10,7 @@
                 <i class="fas fa-truck-loading me-2"></i>
                 Batch Issuance Request
             </h2>
-            <a href="{{ url_for('storesperson') }}" class="btn btn-secondary">
+            <a href="{{ url_for('storesman_dashboard') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-2"></i>
                 Back to Dashboard
             </a>
@@ -29,7 +29,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('create_batch_request') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ url_for('batch_request') }}" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

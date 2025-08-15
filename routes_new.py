@@ -2515,7 +2515,7 @@ def transaction_history():
     transactions = query.order_by(Transaction.created_at.desc()).limit(1000).all()
     sites = Site.query.all() if current_user.role == 'site_engineer' else []
     
-    return render_template('transaction_history.html', 
+    return render_template('view_transactions.html', 
                          transactions=transactions, 
                          sites=sites,
                          selected_site_id=site_id)
@@ -2541,7 +2541,7 @@ def bulk_stock_adjustments():
     if site_id:
         stock_levels = StockLevel.query.filter_by(site_id=site_id).all()
     
-    return render_template('bulk_stock_adjustments.html',
+    return render_template('stock_adjustments.html',
                          stock_levels=stock_levels,
                          sites=sites,
                          selected_site_id=site_id)
@@ -2557,7 +2557,7 @@ def batch_operations():
     sites = Site.query.all()
     materials = Material.query.all()
     
-    return render_template('batch_operations.html',
+    return render_template('batch_issuance.html',
                          sites=sites,
                          materials=materials)
 
@@ -2569,6 +2569,6 @@ def excel_operations():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    return render_template('excel_operations.html')
+    return render_template('materials_dashboard.html')
 
 
