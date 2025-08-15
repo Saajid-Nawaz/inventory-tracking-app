@@ -201,51 +201,84 @@ def site_engineer_dashboard():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    # Get all sites summary
-    sites = Site.query.all()
-    
-    # Get pending requests
-    pending_individual_requests = IssueRequest.query.filter_by(status='pending').count()
-    pending_batch_requests = BatchIssueRequest.query.filter_by(status='pending').count()
-    pending_transfer_requests = StockTransferRequest.query.filter_by(status='pending').count()
-    
-    # Get low stock alerts
-    low_stock_items = InventoryService.get_low_stock_items()
-    
-    # Get recent transactions
-    recent_transactions = InventoryService.get_transaction_history()[:10]
-    
-    # Get additional data for rich dashboard
-    materials = Material.query.all()
-    total_pending = pending_individual_requests + pending_batch_requests + pending_transfer_requests
-    
-    # Get today's activity
-    from sqlalchemy import func
-    today = datetime.now().date()
-    today_receipts = Transaction.query.filter(
-        Transaction.type == 'receive',
-        func.date(Transaction.created_at) == today
-    ).count()
-    
-    today_issues = Transaction.query.filter(
-        Transaction.type == 'issue',
-        func.date(Transaction.created_at) == today
-    ).count()
-    
-    return render_template('site_engineer_dashboard_new.html',
-                         sites=sites,
-                         materials=materials,
-                         total_sites=len(sites),
-                         total_materials=len(materials),
-                         pending_approvals=total_pending,
-                         pending_individual_requests=pending_individual_requests,
-                         pending_batch_requests=pending_batch_requests,
-                         pending_transfer_requests=pending_transfer_requests,
-                         low_stock_alerts=low_stock_items,
-                         recent_transactions=recent_transactions,
-                         today_receipts=today_receipts,
-                         today_issues=today_issues,
-                         current_time=datetime.now())
+    try:
+        # Get all sites summary
+        sites = Site.query.all() or []
+        
+        # Get pending requests with error handling
+        try:
+            pending_individual_requests = IssueRequest.query.filter_by(status='pending').count()
+        except:
+            pending_individual_requests = 0
+            
+        try:
+            pending_batch_requests = BatchIssueRequest.query.filter_by(status='pending').count()
+        except:
+            pending_batch_requests = 0
+            
+        try:
+            pending_transfer_requests = StockTransferRequest.query.filter_by(status='pending').count()
+        except:
+            pending_transfer_requests = 0
+        
+        # Get low stock alerts with error handling
+        try:
+            low_stock_items = InventoryService.get_low_stock_items()
+        except Exception as e:
+            logging.error(f"Error getting low stock items: {e}")
+            low_stock_items = []
+        
+        # Get recent transactions with error handling
+        try:
+            recent_transactions = InventoryService.get_transaction_history()[:10]
+        except Exception as e:
+            logging.error(f"Error getting transaction history: {e}")
+            recent_transactions = []
+        
+        # Get additional data for rich dashboard
+        try:
+            materials = Material.query.all() or []
+        except:
+            materials = []
+            
+        total_pending = pending_individual_requests + pending_batch_requests + pending_transfer_requests
+        
+        # Get today's activity with error handling
+        try:
+            from sqlalchemy import func
+            today = datetime.now().date()
+            today_receipts = Transaction.query.filter(
+                Transaction.type == 'receive',
+                func.date(Transaction.created_at) == today
+            ).count()
+            
+            today_issues = Transaction.query.filter(
+                Transaction.type == 'issue',
+                func.date(Transaction.created_at) == today
+            ).count()
+        except:
+            today_receipts = 0
+            today_issues = 0
+        
+        return render_template('site_engineer_dashboard_new.html',
+                             sites=sites,
+                             materials=materials,
+                             total_sites=len(sites),
+                             total_materials=len(materials),
+                             pending_approvals=total_pending,
+                             pending_individual_requests=pending_individual_requests,
+                             pending_batch_requests=pending_batch_requests,
+                             pending_transfer_requests=pending_transfer_requests,
+                             low_stock_alerts=low_stock_items,
+                             recent_transactions=recent_transactions,
+                             today_receipts=today_receipts,
+                             today_issues=today_issues,
+                             current_time=datetime.now())
+                             
+    except Exception as e:
+        logging.error(f"Error in site_engineer_dashboard: {str(e)}")
+        flash('Error loading dashboard', 'error')
+        return render_template('error.html', message='Dashboard temporarily unavailable'), 500
 
 
 @app.route('/manage_users')
@@ -1202,51 +1235,93 @@ def storesman_dashboard():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    site_id = current_user.assigned_site_id
-    if not site_id:
-        flash('No site assigned to user', 'error')
-        return redirect(url_for('logout'))
-    
-    # Get site information
-    site = Site.query.get(site_id)
-    
-    # Get stock summary for assigned site
-    stock_summary = InventoryService.get_stock_summary(site_id)
-    
-    # Get low stock items for the site
-    low_stock_items = InventoryService.get_low_stock_items(site_id)
-    
-    # Get recent transactions for the site
-    recent_transactions = InventoryService.get_transaction_history(site_id)[:10]
-    
-    # Get pending requests
-    pending_individual = IssueRequest.query.filter_by(
-        site_id=site_id,
-        requested_by=current_user.id,
-        status='pending'
-    ).count()
-    
-    pending_batch = BatchIssueRequest.query.filter_by(
-        site_id=site_id,
-        requested_by=current_user.id,
-        status='pending'
-    ).count()
-    
-    # Get all necessary data for the rich dashboard
-    materials = Material.query.all()
-    stock_levels = StockLevel.query.filter_by(site_id=site_id).all()
-    total_materials = len(materials)
-    current_stock_items = len(stock_levels)
-    pending_requests = pending_individual + pending_batch
-    low_stock_count = len(low_stock_items)
-    
-    # Get pending issue requests for the table
-    pending_issue_requests = IssueRequest.query.filter_by(
-        site_id=site_id,
-        status='pending'
-    ).all()
-    
-    return render_template('storesman_dashboard_new.html',
+    try:
+        site_id = current_user.assigned_site_id
+        if not site_id:
+            flash('No site assigned to user', 'error')
+            return redirect(url_for('logout'))
+        
+        # Get site information with error handling
+        try:
+            site = Site.query.get(site_id)
+            if not site:
+                flash('Site not found', 'error')
+                return redirect(url_for('logout'))
+        except Exception as e:
+            logging.error(f"Error getting site: {e}")
+            site = None
+        
+        # Get stock summary for assigned site
+        try:
+            stock_summary = InventoryService.get_stock_summary(site_id)
+        except Exception as e:
+            logging.error(f"Error getting stock summary: {e}")
+            stock_summary = []
+        
+        # Get low stock items for the site
+        try:
+            low_stock_items = InventoryService.get_low_stock_items(site_id)
+        except Exception as e:
+            logging.error(f"Error getting low stock items: {e}")
+            low_stock_items = []
+        
+        # Get recent transactions for the site
+        try:
+            recent_transactions = InventoryService.get_transaction_history(site_id)[:10]
+        except Exception as e:
+            logging.error(f"Error getting transaction history: {e}")
+            recent_transactions = []
+        
+        # Get pending requests with error handling
+        try:
+            pending_individual = IssueRequest.query.filter_by(
+                site_id=site_id,
+                requested_by=current_user.id,
+                status='pending'
+            ).count()
+        except Exception as e:
+            logging.error(f"Error getting pending individual requests: {e}")
+            pending_individual = 0
+        
+        try:
+            pending_batch = BatchIssueRequest.query.filter_by(
+                site_id=site_id,
+                requested_by=current_user.id,
+                status='pending'
+            ).count()
+        except Exception as e:
+            logging.error(f"Error getting pending batch requests: {e}")
+            pending_batch = 0
+        
+        # Get all necessary data for the rich dashboard
+        try:
+            materials = Material.query.all() or []
+        except Exception as e:
+            logging.error(f"Error getting materials: {e}")
+            materials = []
+            
+        try:
+            stock_levels = StockLevel.query.filter_by(site_id=site_id).all() or []
+        except Exception as e:
+            logging.error(f"Error getting stock levels: {e}")
+            stock_levels = []
+            
+        total_materials = len(materials)
+        current_stock_items = len(stock_levels)
+        pending_requests = pending_individual + pending_batch
+        low_stock_count = len(low_stock_items)
+        
+        # Get pending issue requests for the table
+        try:
+            pending_issue_requests = IssueRequest.query.filter_by(
+                site_id=site_id,
+                status='pending'
+            ).all()
+        except Exception as e:
+            logging.error(f"Error getting pending issue requests: {e}")
+            pending_issue_requests = []
+        
+        return render_template('storesman_dashboard_new.html',
                          site=site,
                          materials=materials,
                          stock_levels=stock_levels,
@@ -1256,9 +1331,14 @@ def storesman_dashboard():
                          low_stock_count=low_stock_count,
                          pending_issue_requests=pending_issue_requests,
                          recent_transactions=recent_transactions,
-                         current_time=datetime.now(),
-                         normal_stock_count=len([s for s in stock_levels if s.material and s.quantity > s.material.minimum_level]),
-                         critical_stock_count=len([s for s in stock_levels if s.material and s.quantity <= (s.material.minimum_level * 0.5)]))
+                             current_time=datetime.now(),
+                             normal_stock_count=len([s for s in stock_levels if s.material and s.quantity > s.material.minimum_level]),
+                             critical_stock_count=len([s for s in stock_levels if s.material and s.quantity <= (s.material.minimum_level * 0.5)]))
+                             
+    except Exception as e:
+        logging.error(f"Error in storesman_dashboard: {str(e)}")
+        flash('Error loading dashboard', 'error')
+        return render_template('error.html', message='Dashboard temporarily unavailable'), 500
 
 
 @app.route('/receive_materials')
