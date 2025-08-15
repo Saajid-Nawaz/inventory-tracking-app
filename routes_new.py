@@ -2595,3 +2595,171 @@ def excel_operations():
     return render_template('materials_dashboard.html')
 
 
+# =====================================================================
+# MISSING ROUTE ALIASES FOR RENDER COMPATIBILITY
+# =====================================================================
+
+@app.route('/bulk_import')
+@login_required
+def bulk_import():
+    """Alias for Excel operations"""
+    return redirect(url_for('excel_operations'))
+
+@app.route('/issue_requests')
+@login_required
+def issue_requests():
+    """Alias for approve requests"""
+    return redirect(url_for('approve_requests'))
+
+@app.route('/generate_report')
+@login_required
+def generate_report():
+    """Alias for reports page"""
+    return redirect(url_for('reports'))
+
+@app.route('/export_excel')
+@login_required
+def export_excel():
+    """Generate and download Excel export"""
+    try:
+        # Default stock report export
+        sites = Site.query.all()
+        if not sites:
+            flash('No sites available', 'error')
+            return redirect(url_for('reports'))
+        
+        # Use first site as default
+        site_id = sites[0].id
+        stock_data = InventoryService.get_stock_levels_for_site(site_id)
+        
+        # Generate Excel report
+        excel_generator = EnhancedExcelReportGenerator()
+        excel_data = {
+            'stock_levels': [
+                {
+                    'material_name': stock.material.name,
+                    'current_stock': stock.quantity,
+                    'unit': stock.material.unit,
+                    'minimum_level': stock.material.minimum_level,
+                    'category': stock.material.category,
+                    'cost_per_unit': stock.material.cost_per_unit,
+                    'total_value': stock.quantity * stock.material.cost_per_unit
+                } for stock in stock_data
+            ]
+        }
+        
+        system_settings = SystemSettings.query.first()
+        company_name = system_settings.company_name if system_settings else 'Construction Company'
+        currency = system_settings.currency if system_settings else 'ZMW'
+        
+        excel_buffer = excel_generator.generate_comprehensive_excel_report(
+            company_name, excel_data, currency
+        )
+        
+        return send_file(
+            excel_buffer,
+            as_attachment=True,
+            download_name=f"stock_report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating Excel export: {str(e)}")
+        flash('Error generating Excel export', 'error')
+        return redirect(url_for('reports'))
+
+@app.route('/export_pdf')
+@login_required
+def export_pdf():
+    """Generate and download PDF export"""
+    try:
+        # Default stock report export
+        sites = Site.query.all()
+        if not sites:
+            flash('No sites available', 'error')
+            return redirect(url_for('reports'))
+        
+        # Use first site as default
+        site_id = sites[0].id
+        site = Site.query.get(site_id)
+        stock_data = InventoryService.get_stock_levels_for_site(site_id)
+        
+        # Generate PDF report
+        system_settings = SystemSettings.query.first()
+        company_name = system_settings.company_name if system_settings else 'Construction Company'
+        currency = system_settings.currency if system_settings else 'ZMW'
+        
+        report_generator = ProfessionalReportGenerator()
+        pdf_buffer = report_generator.generate_stock_level_report(
+            company_name, site.name, stock_data, currency
+        )
+        
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"stock_report_{site.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        logging.error(f"Error generating PDF export: {str(e)}")
+        flash('Error generating PDF export', 'error')
+        return redirect(url_for('reports'))
+
+@app.route('/issue_material')
+@login_required
+def issue_material():
+    """Alias for request materials"""
+    return redirect(url_for('request_materials'))
+
+@app.route('/stock_transfers')
+@login_required
+def stock_transfers():
+    """Alias for stock transfer page"""
+    return redirect(url_for('stock_transfer'))
+
+@app.route('/batch_receive')
+@login_required
+def batch_receive():
+    """Alias for bulk receive materials"""
+    return redirect(url_for('bulk_receive_materials'))
+
+
+# =====================================================================
+# ENHANCED ERROR HANDLERS FOR RENDER DEPLOYMENT
+# =====================================================================
+
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors gracefully"""
+    logging.warning(f"404 error: {request.url}")
+    if current_user.is_authenticated:
+        if current_user.role == 'site_engineer':
+            flash('Page not found. Redirected to dashboard.', 'warning')
+            return redirect(url_for('site_engineer_dashboard'))
+        elif current_user.role == 'storesman':
+            flash('Page not found. Redirected to dashboard.', 'warning')
+            return redirect(url_for('storesman_dashboard'))
+    return redirect(url_for('login'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors gracefully"""
+    db.session.rollback()
+    logging.error(f"500 error: {str(error)}")
+    flash('Internal server error. Please try again.', 'error')
+    if current_user.is_authenticated:
+        if current_user.role == 'site_engineer':
+            return redirect(url_for('site_engineer_dashboard'))
+        elif current_user.role == 'storesman':
+            return redirect(url_for('storesman_dashboard'))
+    return redirect(url_for('login'))
+
+@app.errorhandler(403)
+def forbidden_error(error):
+    """Handle 403 errors gracefully"""
+    logging.warning(f"403 error: {request.url}")
+    flash('Access denied.', 'error')
+    return redirect(url_for('login'))
+
+
