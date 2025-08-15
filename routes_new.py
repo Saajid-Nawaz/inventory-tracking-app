@@ -148,41 +148,64 @@ def initialize_default_data():
 # Authentication Routes
 @app.route('/')
 def index():
-    if current_user.is_authenticated:
-        if current_user.role == 'site_engineer':
-            return redirect(url_for('site_engineer_dashboard'))
-        elif current_user.role == 'storesman':
-            return redirect(url_for('storesman_dashboard'))
-    return redirect(url_for('login'))
+    try:
+        if current_user.is_authenticated:
+            if current_user.role == 'site_engineer':
+                return redirect(url_for('site_engineer_dashboard'))
+            elif current_user.role == 'storesman':
+                return redirect(url_for('storesman_dashboard'))
+        return redirect(url_for('login'))
+    except Exception as e:
+        logging.error(f"Index route error: {str(e)}")
+        return redirect(url_for('login'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            login_user(user)
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid username or password', 'error')
+        try:
+            username = request.form.get('username', '').strip()
+            password = request.form.get('password', '')
+            
+            if not username or not password:
+                flash('Username and password are required', 'error')
+                return render_template('login.html', demo_accounts=get_demo_accounts())
+            
+            user = User.query.filter_by(username=username).first()
+            
+            if user and user.check_password(password):
+                login_user(user)
+                
+                # Safe redirect handling with proper URL construction
+                next_page = request.args.get('next')
+                if next_page and next_page.startswith('/'):
+                    return redirect(next_page)
+                
+                # Direct to appropriate dashboard based on role
+                if user.role == 'site_engineer':
+                    return redirect(url_for('site_engineer_dashboard'))
+                elif user.role == 'storesman':
+                    return redirect(url_for('storesman_dashboard'))
+                else:
+                    return redirect(url_for('index'))
+            else:
+                flash('Invalid username or password', 'error')
+                
+        except Exception as e:
+            logging.error(f"Login error: {str(e)}")
+            flash('Login system error. Please try again.', 'error')
     
-    # Get demo accounts for display
-    demo_accounts = [
-        {'username': 'engineer1', 'password': 'engineer123', 'role': 'Site Engineer'},
-        {'username': 'engineer2', 'password': 'engineer123', 'role': 'Site Engineer'},
+    return render_template('login.html', demo_accounts=get_demo_accounts())
+
+def get_demo_accounts():
+    """Get demo accounts for display on login page"""
+    return [
+        {'username': 'engineer1', 'password': 'eng123', 'role': 'Site Engineer'},
+        {'username': 'engineer2', 'password': 'eng123', 'role': 'Site Engineer'}, 
         {'username': 'storesman1', 'password': 'store123', 'role': 'Storesman (Main Construction Site)'},
         {'username': 'storesman2', 'password': 'store123', 'role': 'Storesman (North Warehouse)'},
         {'username': 'storesman3', 'password': 'store123', 'role': 'Storesman (South Depot)'}
     ]
-    
-    return render_template('login.html', demo_accounts=demo_accounts)
 
 
 @app.route('/logout')
