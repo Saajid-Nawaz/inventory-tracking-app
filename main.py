@@ -6,7 +6,12 @@ from app import app
 logging.basicConfig(level=logging.INFO)
 
 # Import routes to register them with the app
-import routes_new  # noqa: F401
+try:
+    import routes_new  # noqa: F401
+    logging.info("Routes imported successfully")
+except Exception as e:
+    logging.error(f"Error importing routes: {e}")
+    raise e
 
 # Test route to verify app is working
 @app.route('/health')
